@@ -1,0 +1,162 @@
+{
+  "app_name": "LimpiaHogar (House Cleaning Booking)",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A trustworthy, highly functional, and fresh interface that feels as clean and organized as a newly serviced home.",
+  "color": {
+    "surface": { "light": "#FDFBF7", "dark": "#1C1C1E" },
+    "onSurface": { "light": "#1C1C1E", "dark": "#FDFBF7" },
+    "surfaceSecondary": { "light": "#FFFFFF", "dark": "#2C2C2E" },
+    "onSurfaceSecondary": { "light": "#3A3A3C", "dark": "#EAEAEA" },
+    "surfaceTertiary": { "light": "#F2EFE9", "dark": "#3A3A3C" },
+    "onSurfaceTertiary": { "light": "#636366", "dark": "#D1D1D6" },
+    "surfaceInverse": { "light": "#2C3325", "dark": "#E1E8D5" },
+    "onSurfaceInverse": { "light": "#FFFFFF", "dark": "#1C1C1E" },
+    "brand": { "light": "#6B8E23", "dark": "#82A633" },
+    "brandPrimary": { "light": "#5D7B1E", "dark": "#82A633" },
+    "onBrandPrimary": { "light": "#FFFFFF", "dark": "#1A2408" },
+    "brandSecondary": { "light": "#E1E8D5", "dark": "#3A4D13" },
+    "onBrandSecondary": { "light": "#3A4D13", "dark": "#E1E8D5" },
+    "brandTertiary": { "light": "#F0F4EA", "dark": "#26330D" },
+    "onBrandTertiary": { "light": "#4A6017", "dark": "#C8DBA8" },
+    "success": { "light": "#34C759", "dark": "#30D158" },
+    "onSuccess": { "light": "#FFFFFF", "dark": "#000000" },
+    "warning": { "light": "#FF9500", "dark": "#FF9F0A" },
+    "onWarning": { "light": "#FFFFFF", "dark": "#000000" },
+    "error": { "light": "#FF3B30", "dark": "#FF453A" },
+    "onError": { "light": "#FFFFFF", "dark": "#000000" },
+    "info": { "light": "#8E8E93", "dark": "#98989D" },
+    "onInfo": { "light": "#FFFFFF", "dark": "#000000" },
+    "border": { "light": "#E5E5EA", "dark": "#38383A" },
+    "borderStrong": { "light": "#C7C7CC", "dark": "#48484A" },
+    "divider": { "light": "#F2F2F7", "dark": "#2C2C2E" }
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": { "sm": 12, "base": 14, "lg": 16, "xl": 20, "2xl": 24 }
+  },
+  "spacing": {
+    "rule": "Generous iOS-native padding. Cards never sit flush to screen edge; always use md or lg outer margins. Thumb zone CTA is sticky at the bottom.",
+    "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24, "2xl": 32, "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 1,
+  "navigation": "bottom_tabs",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use glass on bottom tab bar, sticky headers over scrolling content, and sticky bottom CTA containers",
+      "Apply glass over hero cards when paired with background imagery",
+      "Ensure strong readability on glass by using translucent tinting beneath"
+    ],
+    "dont's": [
+      "Do not apply glass to body content, form inputs, or individual list rows",
+      "Do not let background text bleed clearly through glass headers"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Client Home (Inicio)",
+      "purpose": "Allow customers to see their upcoming cleaning appointments or easily book a new one.",
+      "states": {
+        "loading": "Centered spinner with soft sage tint.",
+        "empty": "Illustration of a clean, sparkling home with text 'Aún no tienes citas.' and a prominent 'Agendar Cita' button.",
+        "error": "Message: 'Hubo un error al cargar tus citas' with retry button."
+      },
+      "layout": "Hero card at the top taking 30% of screen height with a clean modern living room background image, vertical gradient scrim (transparent to 80% surfaceInverse), and a large 'Agendar nueva limpieza' text/button on top. Below, a section titled 'Próximas Citas' listing upcoming bookings in surfaceSecondary cards. Use glassmorphism on the sticky bottom tab bar."
+    },
+    {
+      "name": "Booking Flow (Agendar Cita)",
+      "purpose": "Step-by-step form allowing the client to select service type, choose date/time, and input their address.",
+      "states": {
+        "loading": "Spinner during availability check.",
+        "empty": "N/A",
+        "error": "Form validation errors displayed inline below inputs."
+      },
+      "layout": "Clean scrollable list of inputs. Service selection using horizontal scrolling cards with images. Date picker with a horizontal strip of days. Address input fields. The primary CTA 'Continuar al Pago' must be sticky at the bottom over a glassmorphic background container, never hidden by scrolling."
+    },
+    {
+      "name": "Checkout (Pago en Línea)",
+      "purpose": "Secure Stripe payment integration completed before the service is confirmed.",
+      "states": {
+        "loading": "Processing payment overlay (fullscreen translucent blur with spinner).",
+        "empty": "N/A",
+        "error": "Payment failed toast/modal with 'Intentar de nuevo'."
+      },
+      "layout": "Order summary card (surfaceSecondary) showing selected service, date, and address. Total amount highlighted prominently (xl size). Stripe payment elements (card input) below. Sticky 'Pagar ahora' button at the bottom."
+    },
+    {
+      "name": "Admin Agenda (Dashboard Personal)",
+      "purpose": "Allow staff/admin to view all upcoming bookings and client details.",
+      "states": {
+        "loading": "Skeleton loaders for agenda items.",
+        "empty": "Icon of calendar with 'No hay limpiezas agendadas para hoy'.",
+        "error": "Failed to load agenda message with retry."
+      },
+      "layout": "Horizontal date strip at the top. Vertical list of appointment cards. Each card displays time, client name, service type, and address. Primary action on each card: 'Ver Ruta' (opens Maps) using brandSecondary tinted buttons."
+    },
+    {
+      "name": "Admin Login (Acceso)",
+      "purpose": "Secure gateway for cleaning staff and admin to access the agenda.",
+      "states": {
+        "loading": "Button shows spinner during auth.",
+        "empty": "N/A",
+        "error": "Invalid credentials shake animation or inline red text."
+      },
+      "layout": "Minimalist centered login form on a surfaceTertiary or subtly blurred photo background. Email and Password fields. Sticky 'Ingresar' CTA."
+    }
+  ],
+  "images": {
+    "hero_living_room": {
+      "url": "https://images.pexels.com/photos/5998138/pexels-photo-5998138.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Clean and modern bright living room in pastel colors"
+    },
+    "service_eco_cleaning": {
+      "url": "https://images.pexels.com/photos/10557898/pexels-photo-10557898.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Eco-friendly cleaning supplies in a pastel organizer"
+    },
+    "service_deep_clean": {
+      "url": "https://images.unsplash.com/photo-1647381518264-97ff1835026f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwxfHxob3VzZWtlZXBpbmd8ZW58MHx8fHwxNzgzMTY3Mjc5fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Person doing housekeeping chores"
+    },
+    "empty_state_clean_home": {
+      "url": "https://images.unsplash.com/photo-1724582586529-62622e50c0b3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxjbGVhbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MHx8fHwxNzgzMTY3Mjc4fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Empty modern living room with large window"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Language is completely in Spanish (es-MX or es-ES). Ensure all CTA texts, placeholders, and error messages are in Spanish.",
+    "Implement the 'iOS-Native Clean' UI. The palette heavily relies on a fresh Sage/Moss green (brandPrimary) as an accent on top of off-white/sand bases. Avoid ANY blue or purple completely.",
+    "The Hero card in 'Client Home' MUST include the `hero_living_room` image as an `expo-image` background, overlaid with a vertical `expo-linear-gradient` scrim (transparent to 80% surfaceInverse), and place the 'Agendar Limpieza' button in the bottom 30% of the card.",
+    "All primary CTAs (like 'Continuar al Pago', 'Pagar ahora') on scrollable screens MUST be sticky at the bottom in a fixed container (using KeyboardAvoidingView where applicable) so they are never hidden under the scroll.",
+    "For the Admin Agenda, ensure the 'Ver Ruta' button uses React Native's `Linking` API to open Apple Maps or Google Maps with the provided address coordinates/string.",
+    "Use Stripe elements/SDK for the 'Pago en Línea' screen checkout flow. Ensure it triggers before finalizing the booking API call.",
+    "Maintain high contrast. Form inputs should have labels above the input fields, and use `surfaceTertiary` for the input backgrounds with `md` border radius.",
+    "Research takeaway: Users expect a streamlined 3-step booking flow (Service -> Time -> Pay). Keep the calendar horizontal and visually uncluttered to prevent conflicts easily."
+  ],
+  "haptics": {
+    "button_press": "light",
+    "tab_change": "light",
+    "booking_confirmed": "success",
+    "payment_failed": "error",
+    "date_selected": "selection"
+  }
+}
