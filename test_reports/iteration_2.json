@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 2 verification PASS on https://cleanroute-app-2.preview.emergentagent.com. Backend: 19/19 pytest (health, services=4 Wels packs in EUR 66/112.5/120/2000, booking create → pay 4242 → paid, decline 4000-…-0002 → 402, admin login + protected endpoints + stats + status transitions + services CRUD). Contact info verified on /info: WhatsApp row shows '+43 664 101 9869' and Linking.openURL fires 'https://wa.me/436641019869'; Email row shows 'denissenavaporras@gmail.com' and opens 'mailto:denissenavaporras@gmail.com' — confirmed by intercepting window.open and observing exact URLs. Brand string is 'Cleaning Service Wels' (singular) on /info hero (1 match, 0 plural), on Home hero (1 match, 0 plural), and in app.json ('name': 'Cleaning Service Wels'). Customer end-to-end: Home → Book (service auto-picked, date/time chips, form) → Checkout (card-number/card-holder/card-exp/card-cvc with 4242 4242 4242 4242) → Success page (¡Cita confirmada!, 'Ver ruta en mapas', MOCK-<ref>) → back home → My bookings shows 'Pagado' badge with 'Ruta' button. Admin end-to-end: /admin/login → /admin (Panel de agenda, stats Hoy/Total/Ingresos €132, 3 total bookings via 'Ver todas') → open first booking modal (modal-route-btn + modal-next-status-btn present, next-status advance works) → /admin/services (4 packs) → add TMP_E2E_Pack (5 packs) → edit to TMP_E2E_Pack_v2 (text updated) → delete (back to 4 packs). Leftover TEST cleanup: services already clean (no TEST_* remaining); backend has no DELETE bookings endpoint, so two prior 'TEST User' bookings from iteration 1 are still in the DB (device_id TEST_device_013a31dc, not user-visible on default device). Only warning: react-native-web repeated 'shadow* deprecated, use boxShadow' console warnings — non-blocking.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "StyleSheet.shadow*", "issue": "react-native-web logs repeated deprecation warnings: 'shadow*' style props are deprecated. Use 'boxShadow'. Non-blocking. Reference: shadowColor/shadowOffset/shadowOpacity/shadowRadius in /app/frontend/app/index.tsx:255-259 (logoBadge) and similar card styles."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: migrate shadow* style props to boxShadow (or Platform.select) to silence deprecation warnings on web.",
+    "OPTIONAL: add a DELETE /api/admin/bookings/{id} endpoint so testing agents can clean up TEST_ bookings created by e2e runs. Currently only services support DELETE."
+  ],
+  "critical_code_review_comments": [
+    "Brand string now consistent singular ('Cleaning Service Wels') in index.tsx:91, info.tsx:98, app.json:3.",
+    "Contact info hardcoded via Linking.openURL in /app/frontend/app/info.tsx:257 (whatsapp) and :269 (mailto) — matches spec exactly (+43 664 101 9869 / denissenavaporras@gmail.com).",
+    "Payment endpoint remains a MOCKED simulator (payment_ref 'MOCK-…') — clearly labelled, decline logic for 4000-…-0002 works."
+  ],
+  "updated_files": [
+    "/app/test_reports/iteration_2.json (new)",
+    "/app/test_reports/pytest/pytest_results.xml (refreshed)"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% for customer + admin end-to-end + /info contact + brand string"},
+  "seed_data_creation": "One additional real booking created via e2e (E2E Cust, +436601234567, Test Str 1 Wels, Pack Básico, mié 08 jul 10:00, paid MOCK). Admin agenda now shows 3 total, €132 ingresos on stats card (pre-existing seed unchanged). TMP_E2E_Pack service was created and fully cleaned up during services CRUD test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend base: https://cleanroute-app-2.preview.emergentagent.com/api. Admin: admin@limpia.com/admin123. Success card 4242 4242 4242 4242 / decline 4000 0000 0000 0002. Booking lifecycle pending_payment→paid→confirmed→in_progress→completed|cancelled. Customer identity via device_id. Frontend uses EXPO_PUBLIC_BACKEND_URL. Key testIDs — book.tsx: service-<id>, day-<iso>, time-<hh:mm>, input-name/phone/address/notes, continue-payment-btn; checkout.tsx: card-number/card-holder/card-exp/card-cvc, pay-now-btn; success.tsx: success-title, open-maps-btn, back-home-btn; admin/index.tsx: admin-services-btn, logout-btn, toggle-all-btn, admin-day-<iso>, admin-booking-<id>, modal-route-btn, modal-next-status-btn, modal-cancel-btn, modal-close-btn; admin/services.tsx: add-service-btn, svc-<id>, edit-<id>, del-<id>, form-name/desc/price/duration/image/active-toggle/save-btn/cancel-btn. /info contact testIDs: whatsapp-btn, email-btn. Backend has no DELETE bookings endpoint.",
+  "rca_of_issue": "N/A — no bugs. Iteration 2 verification of contact-info + brand-string changes: all pass."
+}
