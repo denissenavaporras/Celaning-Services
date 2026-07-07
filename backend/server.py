@@ -164,37 +164,37 @@ async def seed_data():
         })
         logger.info("Admin seeded: admin@limpia.com / admin123")
 
-    # Seed services (Cleaning Service Wels packs in EUR)
-    SEED_VERSION = "wels_packs_v1"
+    # Seed services (Cleaning Service Wels packs in EUR - German)
+    SEED_VERSION = "wels_packs_v2_de"
     marker = await db.settings.find_one({"key": "seed_version"})
     current = marker["value"] if marker else None
     if current != SEED_VERSION:
         await db.services.delete_many({})
         samples = [
             Service(
-                name="Pack Básico",
-                description="Mantenimiento semanal (3h): limpieza ligera + recogida y orden general. Perfecto para hogares que quieren mantener todo impecable.",
-                price=66.0,  # 22€/h * 3h
+                name="Basis-Paket",
+                description="Wöchentliche Pflege (3 Std.): leichte Reinigung + allgemeine Ordnung. Perfekt für Haushalte, die alles makellos halten möchten.",
+                price=66.0,
                 duration_minutes=180,
                 image_url="https://images.pexels.com/photos/5998138/pexels-photo-5998138.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
             ),
             Service(
-                name="Pack Familiar",
-                description="Cuidado de niños + limpieza ligera (4-5h). Incluye recogida del cole, merienda, deberes y limpieza de zonas comunes. Ideal para tardes de diario.",
-                price=112.5,  # 25€/h * 4.5h
+                name="Familien-Paket",
+                description="Kinderbetreuung + leichte Reinigung (4-5 Std.). Abholung von der Schule, Jause, Hausaufgabenhilfe und Reinigung der Gemeinschaftsbereiche. Ideal für Nachmittage.",
+                price=112.5,
                 duration_minutes=270,
                 image_url="https://images.unsplash.com/photo-1647381518264-97ff1835026f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwxfHxob3VzZWtlZXBpbmd8ZW58MHx8fHwxNzgzMTY3Mjc5fDA&ixlib=rb-4.1.0&q=85",
             ),
             Service(
-                name="Pack Premium",
-                description="Favorito de familias ejecutivas (5h/día): limpieza profunda con vapor, organización de una zona, cuidado de niños con actividades en inglés y preparación de la cena.",
+                name="Premium-Paket",
+                description="Favorit berufstätiger Familien (5 Std./Tag): Tiefenreinigung mit Dampf, Organisation eines Bereichs, Kinderbetreuung mit Aktivitäten auf Englisch und Zubereitung des Abendessens.",
                 price=120.0,
                 duration_minutes=300,
                 image_url="https://images.pexels.com/photos/10557898/pexels-photo-10557898.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
             ),
             Service(
-                name="Pack VIP Mensual",
-                description="20 horas semanales distribuidas a tu gusto con prioridad de horario, informe diario detallado y servicio de emergencia con 24h de antelación.",
+                name="VIP-Monatspaket",
+                description="20 Wochenstunden nach Ihren Wünschen, mit Prioritätszeiten, detailliertem täglichem Bericht und Notdienst mit 24-Stunden-Vorlauf.",
                 price=2000.0,
                 duration_minutes=1200,
                 image_url="https://images.unsplash.com/photo-1724582586529-62622e50c0b3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxjbGVhbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MHx8fHwxNzgzMTY3Mjc4fDA&ixlib=rb-4.1.0&q=85",

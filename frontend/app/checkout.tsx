@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
@@ -62,25 +55,29 @@ export default function Checkout() {
       });
       router.replace({ pathname: "/success", params: { id: booking.id } });
     } catch (e: any) {
-      setError(e.message || "Error en el pago");
+      const msg = (e.message || "").toString();
+      const translated = msg.includes("rechazada") || msg.includes("declined")
+        ? "Karte abgelehnt. Bitte andere Karte versuchen."
+        : msg.includes("tarjeta") || msg.includes("card")
+        ? "Ungültige Kartennummer."
+        : msg.includes("CVC")
+        ? "Ungültiger CVC."
+        : msg.includes("titular") || msg.includes("holder")
+        ? "Karteninhaber erforderlich."
+        : msg.includes("pagada") || msg.includes("paid")
+        ? "Termin ist bereits bezahlt."
+        : "Zahlungsfehler.";
+      setError(translated);
     } finally {
       setPaying(false);
     }
   }
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator color={colors.brandPrimary} />
-      </View>
-    );
+    return <View style={styles.loader}><ActivityIndicator color={colors.brandPrimary} /></View>;
   }
   if (!booking) {
-    return (
-      <View style={styles.loader}>
-        <Text>{error || "Cita no encontrada"}</Text>
-      </View>
-    );
+    return <View style={styles.loader}><Text>{error || "Termin nicht gefunden"}</Text></View>;
   }
 
   return (
@@ -90,7 +87,7 @@ export default function Checkout() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Pago seguro</Text>
+        <Text style={styles.headerTitle}>Sichere Zahlung</Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -100,44 +97,42 @@ export default function Checkout() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Order summary */}
           <View style={styles.summary}>
-            <Text style={styles.summaryTitle}>Resumen de tu cita</Text>
+            <Text style={styles.summaryTitle}>Ihre Terminübersicht</Text>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Servicio</Text>
+              <Text style={styles.rowLabel}>Service</Text>
               <Text style={styles.rowValue}>{booking.service_name}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Fecha</Text>
+              <Text style={styles.rowLabel}>Datum</Text>
               <Text style={styles.rowValue}>
-                {new Date(booking.scheduled_date + "T00:00:00").toLocaleDateString("es", { weekday: "long", day: "2-digit", month: "long" })}
+                {new Date(booking.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Hora</Text>
-              <Text style={styles.rowValue}>{booking.scheduled_time}</Text>
+              <Text style={styles.rowLabel}>Uhrzeit</Text>
+              <Text style={styles.rowValue}>{booking.scheduled_time} Uhr</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Dirección</Text>
+              <Text style={styles.rowLabel}>Adresse</Text>
               <Text numberOfLines={2} style={[styles.rowValue, { flex: 1, textAlign: "right", marginLeft: spacing.md }]}>
                 {booking.address}
               </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.row}>
-              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalLabel}>Gesamt</Text>
               <Text style={styles.totalValue}>€{booking.service_price.toFixed(2)} EUR</Text>
             </View>
           </View>
 
-          {/* Card form */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="lock-closed" size={16} color={colors.brandPrimary} />
-              <Text style={styles.cardHeaderText}>Pago simulado — modo demo</Text>
+              <Text style={styles.cardHeaderText}>Simulierte Zahlung — Demo-Modus</Text>
             </View>
 
-            <Text style={styles.inputLabel}>Número de tarjeta</Text>
+            <Text style={styles.inputLabel}>Kartennummer</Text>
             <TextInput
               testID="card-number"
               value={cardNumber}
@@ -148,12 +143,12 @@ export default function Checkout() {
               style={styles.input}
             />
 
-            <Text style={styles.inputLabel}>Titular</Text>
+            <Text style={styles.inputLabel}>Karteninhaber</Text>
             <TextInput
               testID="card-holder"
               value={holder}
               onChangeText={setHolder}
-              placeholder="Nombre en la tarjeta"
+              placeholder="Name auf der Karte"
               placeholderTextColor={colors.info}
               style={styles.input}
               autoCapitalize="words"
@@ -161,12 +156,12 @@ export default function Checkout() {
 
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Vencimiento</Text>
+                <Text style={styles.inputLabel}>Ablauf</Text>
                 <TextInput
                   testID="card-exp"
                   value={exp}
                   onChangeText={(v) => setExp(formatExp(v))}
-                  placeholder="MM/AA"
+                  placeholder="MM/JJ"
                   placeholderTextColor={colors.info}
                   keyboardType="number-pad"
                   style={styles.input}
@@ -191,7 +186,7 @@ export default function Checkout() {
           <View style={styles.infoBox}>
             <Ionicons name="information-circle" size={16} color={colors.brandPrimary} />
             <Text style={styles.infoText}>
-              Tu tarjeta será cobrada solo cuando confirmes. Puedes usar 4242 4242 4242 4242 para simular un pago exitoso.
+              Ihre Karte wird nur belastet, wenn Sie bestätigen. Nutzen Sie 4242 4242 4242 4242 für eine erfolgreiche Testzahlung.
             </Text>
           </View>
 
@@ -210,7 +205,7 @@ export default function Checkout() {
             ) : (
               <>
                 <Ionicons name="lock-closed" size={18} color={colors.onBrandPrimary} />
-                <Text style={styles.payBtnText}>Pagar €{booking.service_price.toFixed(0)} y confirmar</Text>
+                <Text style={styles.payBtnText}>€{booking.service_price.toFixed(0)} bezahlen & bestätigen</Text>
               </>
             )}
           </Pressable>
@@ -223,25 +218,16 @@ export default function Checkout() {
 const styles = StyleSheet.create({
   loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.surface },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, backgroundColor: colors.surface,
+    borderBottomWidth: 1, borderBottomColor: colors.divider,
   },
   headerTitle: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: radius.pill, backgroundColor: colors.brandTertiary },
 
   summary: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.lg,
+    marginTop: spacing.lg, borderWidth: 1, borderColor: colors.border,
   },
   summaryTitle: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface, marginBottom: spacing.md },
   row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, alignItems: "flex-start" },
@@ -252,56 +238,32 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: typography.sizes.xl, fontWeight: "800", color: colors.brandPrimary },
 
   card: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.lg,
+    marginTop: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.md },
   cardHeaderText: { fontSize: typography.sizes.sm, color: colors.brandPrimary, fontWeight: "600" },
   inputLabel: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, fontWeight: "600", marginBottom: 6, marginTop: spacing.sm },
   input: {
-    backgroundColor: colors.surfaceTertiary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: typography.sizes.base,
-    color: colors.onSurface,
-    minHeight: 48,
+    backgroundColor: colors.surfaceTertiary, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: typography.sizes.base, color: colors.onSurface, minHeight: 48,
   },
 
   infoBox: {
-    marginTop: spacing.md,
-    backgroundColor: colors.brandTertiary,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    flexDirection: "row",
-    gap: spacing.sm,
+    marginTop: spacing.md, backgroundColor: colors.brandTertiary, padding: spacing.md,
+    borderRadius: radius.md, flexDirection: "row", gap: spacing.sm,
   },
   infoText: { flex: 1, fontSize: typography.sizes.sm, color: colors.onBrandTertiary, lineHeight: 18 },
   errorText: { color: colors.error, marginTop: spacing.md, textAlign: "center" },
 
   stickyBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.surfaceSecondary,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    position: "absolute", left: 0, right: 0, bottom: 0,
+    backgroundColor: colors.surfaceSecondary, borderTopWidth: 1, borderTopColor: colors.border,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.md,
   },
   payBtn: {
-    backgroundColor: colors.brandPrimary,
-    paddingVertical: 16,
-    borderRadius: radius.pill,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.sm,
+    backgroundColor: colors.brandPrimary, paddingVertical: 16, borderRadius: radius.pill,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: spacing.sm,
   },
   payBtnText: { color: colors.onBrandPrimary, fontSize: typography.sizes.base, fontWeight: "800" },
 });

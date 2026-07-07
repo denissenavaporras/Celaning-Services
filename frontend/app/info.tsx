@@ -12,67 +12,67 @@ const HERO =
 
 const PACKS = [
   {
-    tier: "🥇 Básico",
-    name: "Mantenimiento semanal",
-    desc: "3h de limpieza ligera + recogida y orden general.",
-    price: "22 €/hora",
+    tier: "🥇 Basis",
+    name: "Wöchentliche Pflege",
+    desc: "3 Std. leichte Reinigung + allgemeine Ordnung.",
+    price: "22 €/Std.",
     color: "#F0F4EA",
   },
   {
-    tier: "🥈 Familiar",
-    name: "Cuidado de niños + limpieza",
-    desc: "4-5h ideal para tardes. Recogida del cole, merienda, deberes y limpieza de zonas comunes.",
-    price: "25 €/hora",
+    tier: "🥈 Familie",
+    name: "Kinderbetreuung + Reinigung",
+    desc: "4-5 Std. ideal für Nachmittage. Abholung von der Schule, Jause, Hausaufgabenhilfe und Reinigung der Gemeinschaftsbereiche.",
+    price: "25 €/Std.",
     color: "#E1E8D5",
   },
   {
     tier: "🥉 Premium",
-    name: "Favorito de familias ejecutivas",
-    desc: "5h/día: limpieza profunda con vapor, organización de una zona, cuidado infantil con inglés y preparación de la cena.",
-    price: "120 €/día · 24 €/h",
+    name: "Favorit berufstätiger Familien",
+    desc: "5 Std./Tag: Tiefenreinigung mit Dampf, Organisation eines Bereichs, Kinderbetreuung mit Englisch und Zubereitung des Abendessens.",
+    price: "120 €/Tag · 24 €/Std.",
     color: "#F0F4EA",
   },
   {
     tier: "🏆 VIP",
-    name: "20h semanales prioritarias",
-    desc: "Horario prioritario, informe diario detallado y servicio de emergencia con 24h de antelación.",
-    price: "2.000 €/mes · 25 €/h",
+    name: "20 Wochenstunden mit Priorität",
+    desc: "Prioritätszeiten, detaillierter Tagesbericht und Notdienst mit 24 Std. Vorlauf.",
+    price: "2.000 €/Monat · 25 €/Std.",
     color: "#E1E8D5",
   },
 ];
 
 const OFFERS = [
-  { icon: "star", title: "10% en tu primera semana", body: "Bienvenida nuevos clientes." },
-  { icon: "gift", title: "Limpieza de nevera GRATIS", body: "Con pack Familiar o Premium por 4 semanas (valor 40 €)." },
-  { icon: "people", title: "Recomiéndame y gana", body: "2 horas de limpieza extra si una amiga contrata." },
-  { icon: "cash", title: "5% de descuento mensual", body: "Pagando el primer día del mes por adelantado." },
+  { icon: "star", code: "WILLKOMMEN10", title: "10 % auf die erste Woche", body: "Willkommensrabatt für Neukunden." },
+  { icon: "gift", code: "KUEHL40", title: "Kühlschrankreinigung GRATIS", body: "Mit Familien- oder Premium-Paket für 4 Wochen (Wert 40 €)." },
+  { icon: "people", code: "FREUNDIN2H", title: "Empfehlen & gewinnen", body: "2 Std. Reinigung extra, wenn eine Freundin bucht." },
+  { icon: "cash", code: "MONAT5", title: "5 % Rabatt monatlich", body: "Bei Vorauszahlung am 1. Tag des Monats." },
 ];
 
 const PAYMENTS = [
-  "Transferencia bancaria (SEPA)",
-  "Efectivo (con recibo)",
-  "Dienstleistungsscheck (deducción fiscal + seguridad social)",
+  "SEPA-Überweisung",
+  "Bar (mit Quittung)",
+  "Dienstleistungsscheck (Steuervorteil + Sozialversicherung)",
   "PayPal",
 ];
 
-const COVERAGE = ["Wels ciudad", "Holzhausen", "Schleißheim", "Buchkirchen", "Weißkirchen", "Pennewang", "Marchtrenk"];
+const COVERAGE = ["Wels Stadt", "Holzhausen", "Schleißheim", "Buchkirchen", "Weißkirchen", "Pennewang", "Marchtrenk"];
 
 const TESTIMONIALS = [
   {
-    text: "¡Increíble! Mi casa nunca había estado tan limpia y mis hijos la adoran. Es súper profesional y confiable. La recomiendo 100%.",
-    author: "Familia M., Holzhausen",
+    text: "Unglaublich! Mein Haus war noch nie so sauber und meine Kinder lieben sie. Sie ist super professionell und zuverlässig. 100 % Empfehlung.",
+    author: "Familie M., Holzhausen",
   },
   {
-    text: "Con Dennisse puedo concentrarme en mi trabajo sin preocupaciones. Llego a casa y todo está en orden, los niños felices y la cena preparada. Un lujo.",
-    author: "Familia K., Wels",
+    text: "Mit Dennisse kann ich mich sorgenfrei auf meine Arbeit konzentrieren. Ich komme heim und alles ist in Ordnung, die Kinder glücklich und das Abendessen zubereitet. Ein Luxus.",
+    author: "Familie K., Wels",
   },
 ];
 
 const TRUST = [
-  { icon: "medkit", label: "Certificado de primeros auxilios" },
-  { icon: "shield-checkmark", label: "Seguro de responsabilidad civil" },
-  { icon: "document-text", label: "Referencias disponibles" },
-  { icon: "receipt", label: "Acepto Dienstleistungsscheck" },
+  { icon: "medkit", label: "Erste-Hilfe-Zertifikat" },
+  { icon: "shield-checkmark", label: "Haftpflichtversicherung" },
+  { icon: "document-text", label: "Referenzen verfügbar" },
+  { icon: "receipt", label: "Dienstleistungsscheck akzeptiert" },
 ];
 
 export default function Info() {
@@ -97,15 +97,19 @@ export default function Info() {
             <View style={styles.heroBottom}>
               <Text style={styles.heroBrand}>Cleaning Service Wels</Text>
               <Text style={styles.heroTitle}>Dennisse Nava Porras</Text>
-              <Text style={styles.heroSub}>Limpieza profesional + Cuidado infantil</Text>
+              <Text style={styles.heroSub}>Professionelle Reinigung + Kinderbetreuung</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.badge}>
                   <Ionicons name="time-outline" size={12} color={colors.onBrandTertiary} />
-                  <Text style={styles.badgeText}>5 años de experiencia</Text>
+                  <Text style={styles.badgeText}>5 Jahre Erfahrung</Text>
                 </View>
                 <View style={styles.badge}>
                   <Ionicons name="location-outline" size={12} color={colors.onBrandTertiary} />
                   <Text style={styles.badgeText}>Wels & Wels-Land</Text>
+                </View>
+                <View style={styles.badge}>
+                  <Ionicons name="calendar-outline" size={12} color={colors.onBrandTertiary} />
+                  <Text style={styles.badgeText}>Mo–So 14:00–19:00</Text>
                 </View>
               </View>
             </View>
@@ -114,43 +118,47 @@ export default function Info() {
 
         {/* About */}
         <View style={styles.section}>
-          <Text style={styles.h1}>🌟 ¿Quién soy?</Text>
+          <Text style={styles.h1}>🌟 Wer bin ich?</Text>
           <Text style={styles.body}>
-            Soy Dennisse, una profesional con 5 años de experiencia en el cuidado del hogar y de los niños. Mi misión
-            es ofrecerte tranquilidad y tiempo de calidad para ti y tu familia.
+            Ich bin Dennisse, eine Fachkraft mit 5 Jahren Erfahrung im Haushalt und in der Kinderbetreuung. Meine
+            Mission ist es, Ihnen Ruhe und Qualitätszeit für Sie und Ihre Familie zu schenken.
           </Text>
           <Text style={styles.body}>
-            Trabajo con productos ecológicos (seguros para niños y mascotas) y técnicas de limpieza profesional con
-            vapor que eliminan el 99,9% de las bacterias sin químicos agresivos.
+            Ich arbeite mit ökologischen Produkten (sicher für Kinder und Haustiere) und mit professioneller
+            Dampfreinigung, die 99,9 % der Bakterien entfernt – ohne aggressive Chemie.
           </Text>
           <Text style={styles.body}>
-            Cuento con formación en primeros auxilios y estimulación infantil, así que mientras limpio tu hogar, tus
-            hijos estarán entretenidos y aprendiendo.
+            Ich verfüge über eine Erste-Hilfe-Ausbildung und Erfahrung in der Frühförderung. Während ich Ihr Zuhause
+            reinige, sind Ihre Kinder in guten Händen und lernen spielerisch dazu.
           </Text>
         </View>
 
         {/* What I offer */}
         <View style={styles.section}>
-          <Text style={styles.h1}>🛠️ ¿Qué ofrezco?</Text>
+          <Text style={styles.h1}>🛠️ Was ich anbiete</Text>
 
-          <Text style={styles.h2}>Limpieza profesional</Text>
-          {["Limpieza profunda de baños, cocina y superficies",
-            "Limpieza con vapor (ideal para alergias y familias con niños)",
-            "Organización de armarios, despensas y trasteros",
-            "Planchado y cuidado de la ropa",
-            "Productos ecológicos hipoalergénicos (sin tóxicos)"].map((t) => (
+          <Text style={styles.h2}>Professionelle Reinigung</Text>
+          {[
+            "Tiefenreinigung von Bädern, Küche und Oberflächen",
+            "Dampfreinigung (ideal für Allergiker und Familien mit Kindern)",
+            "Organisation von Schränken, Speisekammern und Abstellräumen",
+            "Bügeln und Wäschepflege",
+            "Ökologische, hypoallergene Produkte (ohne Giftstoffe)",
+          ].map((t) => (
             <View key={t} style={styles.bullet}>
               <Ionicons name="checkmark-circle" size={16} color={colors.brandPrimary} />
               <Text style={styles.bulletText}>{t}</Text>
             </View>
           ))}
 
-          <Text style={styles.h2}>Cuidado infantil</Text>
-          {["Recogida del colegio / guardería",
-            "Merienda saludable y supervisión de comidas",
-            "Apoyo escolar y deberes (también en inglés)",
-            "Actividades educativas (manualidades, juegos, lectura)",
-            "Baño y rutina de sueño"].map((t) => (
+          <Text style={styles.h2}>Kinderbetreuung</Text>
+          {[
+            "Abholung von Schule / Kindergarten",
+            "Gesunde Jause und Aufsicht bei Mahlzeiten",
+            "Lernbegleitung und Hausaufgaben (auch auf Englisch)",
+            "Pädagogische Aktivitäten (Basteln, Spiele, Lesen)",
+            "Bad und Schlafenszeit-Routine",
+          ].map((t) => (
             <View key={t} style={styles.bullet}>
               <Ionicons name="checkmark-circle" size={16} color={colors.brandPrimary} />
               <Text style={styles.bulletText}>{t}</Text>
@@ -158,14 +166,26 @@ export default function Info() {
           ))}
 
           <View style={styles.plusBox}>
-            <Text style={styles.plusTitle}>💡 Además</Text>
-            <Text style={styles.plusBody}>Flexibilidad horaria · Servicio "llave en mano" · Informe diario por WhatsApp (fotos y resumen)</Text>
+            <Text style={styles.plusTitle}>💡 Zusätzlich</Text>
+            <Text style={styles.plusBody}>Flexible Zeiten · Schlüsseldienst · Täglicher WhatsApp-Bericht (Fotos + Zusammenfassung)</Text>
+          </View>
+        </View>
+
+        {/* Availability */}
+        <View style={styles.section}>
+          <Text style={styles.h1}>🕑 Verfügbarkeit</Text>
+          <View style={styles.availBox}>
+            <Ionicons name="time" size={22} color={colors.brandPrimary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.availTitle}>Montag bis Sonntag</Text>
+              <Text style={styles.availBody}>von 14:00 bis 19:00 Uhr – buchen Sie einen Termin, der Ihnen passt.</Text>
+            </View>
           </View>
         </View>
 
         {/* Packs */}
         <View style={styles.section}>
-          <Text style={styles.h1}>📦 Mis packs especiales</Text>
+          <Text style={styles.h1}>📦 Meine speziellen Pakete</Text>
           {PACKS.map((p) => (
             <View key={p.name} style={[styles.packCard, { backgroundColor: p.color }]}>
               <Text style={styles.packTier}>{p.tier}</Text>
@@ -180,15 +200,20 @@ export default function Info() {
 
         {/* Offers */}
         <View style={styles.section}>
-          <Text style={styles.h1}>🎁 Ofertas especiales</Text>
+          <Text style={styles.h1}>🎁 Spezielle Angebote</Text>
+          <Text style={styles.body}>Geben Sie den Code bei Ihrer Buchung an, um den Rabatt zu erhalten.</Text>
           {OFFERS.map((o) => (
-            <View key={o.title} style={styles.offer}>
+            <View key={o.title} testID={`offer-${o.code}`} style={styles.offer}>
               <View style={styles.offerIcon}>
                 <Ionicons name={o.icon as any} size={18} color={colors.onBrandPrimary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.offerTitle}>{o.title}</Text>
                 <Text style={styles.offerBody}>{o.body}</Text>
+                <View style={styles.codePill}>
+                  <Ionicons name="pricetag" size={12} color={colors.onBrandPrimary} />
+                  <Text style={styles.codeText}>{o.code}</Text>
+                </View>
               </View>
             </View>
           ))}
@@ -196,7 +221,7 @@ export default function Info() {
 
         {/* Payments */}
         <View style={styles.section}>
-          <Text style={styles.h1}>💳 Formas de pago</Text>
+          <Text style={styles.h1}>💳 Zahlungsmethoden</Text>
           <View style={styles.chipsRow}>
             {PAYMENTS.map((p) => (
               <View key={p} style={styles.chip}>
@@ -208,8 +233,8 @@ export default function Info() {
 
         {/* Coverage */}
         <View style={styles.section}>
-          <Text style={styles.h1}>📍 Zona de cobertura</Text>
-          <Text style={styles.body}>Wels y municipios de Wels-Land.</Text>
+          <Text style={styles.h1}>📍 Servicegebiet</Text>
+          <Text style={styles.body}>Wels und Gemeinden in Wels-Land.</Text>
           <View style={styles.chipsRow}>
             {COVERAGE.map((z) => (
               <View key={z} style={[styles.chip, { backgroundColor: colors.brandSecondary }]}>
@@ -222,7 +247,7 @@ export default function Info() {
 
         {/* Testimonials */}
         <View style={styles.section}>
-          <Text style={styles.h1}>⭐ Reseñas de clientes</Text>
+          <Text style={styles.h1}>⭐ Kundenbewertungen</Text>
           {TESTIMONIALS.map((t) => (
             <View key={t.author} style={styles.review}>
               <View style={styles.stars}>
@@ -238,7 +263,7 @@ export default function Info() {
 
         {/* Trust */}
         <View style={styles.section}>
-          <Text style={styles.h1}>🔒 Confianza y seguridad</Text>
+          <Text style={styles.h1}>🔒 Vertrauen & Sicherheit</Text>
           <View style={styles.trustGrid}>
             {TRUST.map((t) => (
               <View key={t.label} style={styles.trustCard}>
@@ -251,7 +276,7 @@ export default function Info() {
 
         {/* Contact */}
         <View style={styles.section}>
-          <Text style={styles.h1}>📞 Contacto</Text>
+          <Text style={styles.h1}>📞 Kontakt</Text>
           <Pressable
             testID="whatsapp-btn"
             onPress={() => Linking.openURL("https://wa.me/436641019869")}
@@ -259,7 +284,7 @@ export default function Info() {
           >
             <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.contactLabel}>WhatsApp / Teléfono</Text>
+              <Text style={styles.contactLabel}>WhatsApp / Telefon</Text>
               <Text style={styles.contactValue}>+43 664 101 9869</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
@@ -271,12 +296,12 @@ export default function Info() {
           >
             <Ionicons name="mail" size={22} color={colors.brandPrimary} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.contactLabel}>Email</Text>
+              <Text style={styles.contactLabel}>E-Mail</Text>
               <Text style={styles.contactValue}>denissenavaporras@gmail.com</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
           </Pressable>
-          <Text style={styles.contactHelper}>Disponible para consultas sin compromiso.</Text>
+          <Text style={styles.contactHelper}>Unverbindliche Anfragen jederzeit willkommen.</Text>
         </View>
       </ScrollView>
 
@@ -288,7 +313,7 @@ export default function Info() {
           style={styles.ctaBtn}
         >
           <Ionicons name="calendar" size={18} color={colors.onBrandPrimary} />
-          <Text style={styles.ctaText}>Agendar mi cita</Text>
+          <Text style={styles.ctaText}>Meinen Termin buchen</Text>
         </Pressable>
       </View>
     </View>
@@ -296,7 +321,7 @@ export default function Info() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 320, backgroundColor: colors.surfaceInverse, overflow: "hidden" },
+  hero: { height: 340, backgroundColor: colors.surfaceInverse, overflow: "hidden" },
   heroContent: { flex: 1, paddingHorizontal: spacing.lg, justifyContent: "space-between" },
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
@@ -326,6 +351,13 @@ const styles = StyleSheet.create({
   plusTitle: { fontSize: typography.sizes.base, fontWeight: "800", color: colors.onBrandTertiary },
   plusBody: { fontSize: typography.sizes.sm, color: colors.onBrandTertiary, marginTop: 4, lineHeight: 18 },
 
+  availBox: {
+    flexDirection: "row", alignItems: "center", gap: spacing.md,
+    backgroundColor: colors.brandTertiary, borderRadius: radius.lg, padding: spacing.lg,
+  },
+  availTitle: { fontSize: typography.sizes.lg, fontWeight: "800", color: colors.onBrandTertiary },
+  availBody: { fontSize: typography.sizes.sm, color: colors.onBrandTertiary, marginTop: 2 },
+
   packCard: { borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
   packTier: { fontSize: typography.sizes.sm, fontWeight: "800", color: colors.onBrandTertiary, letterSpacing: 1 },
   packName: { fontSize: typography.sizes.lg, fontWeight: "800", color: colors.onSurface, marginTop: 4 },
@@ -347,6 +379,16 @@ const styles = StyleSheet.create({
   },
   offerTitle: { fontSize: typography.sizes.base, fontWeight: "700", color: colors.onSurface },
   offerBody: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, marginTop: 2 },
+  codePill: {
+    marginTop: spacing.sm, alignSelf: "flex-start",
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: colors.brandPrimary,
+    paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill,
+  },
+  codeText: {
+    fontSize: typography.sizes.sm, fontWeight: "800",
+    color: colors.onBrandPrimary, letterSpacing: 1,
+  },
 
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
   chip: {

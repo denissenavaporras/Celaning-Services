@@ -44,13 +44,19 @@ class TestServices:
         data = r.json()
         assert isinstance(data, list)
         names = {s["name"] for s in data}
-        expected = {"Pack Básico", "Pack Familiar", "Pack Premium", "Pack VIP Mensual"}
+        expected = {"Basis-Paket", "Familien-Paket", "Premium-Paket", "VIP-Monatspaket"}
         assert expected.issubset(names), f"Missing packs. Got: {names}"
         prices = {s["name"]: s["price"] for s in data}
-        assert prices["Pack Básico"] == 66.0
-        assert prices["Pack Familiar"] == 112.5
-        assert prices["Pack Premium"] == 120.0
-        assert prices["Pack VIP Mensual"] == 2000.0
+        assert prices["Basis-Paket"] == 66.0
+        assert prices["Familien-Paket"] == 112.5
+        assert prices["Premium-Paket"] == 120.0
+        assert prices["VIP-Monatspaket"] == 2000.0
+        # Ensure German descriptions (no Spanish)
+        for s in data:
+            desc = s.get("description", "")
+            spanish_markers = ["Limpieza", "Cuidado", "niños", "Ideal para", "hijos"]
+            for m in spanish_markers:
+                assert m not in desc, f"Spanish marker '{m}' found in {s['name']} description"
 
 
 # ---------- Bookings + Payment ----------

@@ -33,7 +33,7 @@ export default function AdminLogin() {
       await storage.secureSet("admin_token", r.access_token);
       router.replace("/admin");
     } catch (e: any) {
-      setError(e.message || "Credenciales inválidas");
+      setError(e.message || "Ungültige Zugangsdaten");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export default function AdminLogin() {
         <Pressable testID="back-btn" onPress={() => router.replace("/")} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Acceso administrador</Text>
+        <Text style={styles.headerTitle}>Administrator-Zugang</Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -60,12 +60,12 @@ export default function AdminLogin() {
                 contentFit="contain"
               />
             </View>
-            <Text style={styles.brandTitle}>Panel de agenda</Text>
-            <Text style={styles.brandText}>Ingresa con tus credenciales para ver todas las citas y rutas.</Text>
+            <Text style={styles.brandTitle}>Terminkalender</Text>
+            <Text style={styles.brandText}>Melden Sie sich mit Ihren Zugangsdaten an, um Termine und Routen zu sehen.</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.inputLabel}>Correo electrónico</Text>
+            <Text style={styles.inputLabel}>E-Mail</Text>
             <TextInput
               testID="admin-email"
               value={email}
@@ -77,7 +77,7 @@ export default function AdminLogin() {
               keyboardType="email-address"
               style={styles.input}
             />
-            <Text style={styles.inputLabel}>Contraseña</Text>
+            <Text style={styles.inputLabel}>Passwort</Text>
             <TextInput
               testID="admin-password"
               value={password}
@@ -91,10 +91,10 @@ export default function AdminLogin() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Pressable testID="admin-login-btn" onPress={submit} disabled={loading} style={[styles.btn, loading && { opacity: 0.6 }]}>
-              {loading ? <ActivityIndicator color={colors.onBrandPrimary} /> : <Text style={styles.btnTxt}>Ingresar</Text>}
+              {loading ? <ActivityIndicator color={colors.onBrandPrimary} /> : <Text style={styles.btnTxt}>Anmelden</Text>}
             </Pressable>
 
-            <Text style={styles.helper}>Cuenta demo pre-configurada: admin@limpia.com / admin123</Text>
+            <Text style={styles.helper}>Demo-Konto: admin@limpia.com / admin123</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

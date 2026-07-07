@@ -18,21 +18,21 @@ function getNextDays(count: number) {
     const nd = new Date(d);
     nd.setDate(d.getDate() + i);
     const iso = nd.toISOString().slice(0, 10);
-    const day = nd.toLocaleDateString("es", { weekday: "short" }).slice(0, 3).toUpperCase();
+    const day = nd.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 3).toUpperCase();
     const num = String(nd.getDate()).padStart(2, "0");
-    const mon = nd.toLocaleDateString("es", { month: "short" }).toUpperCase();
+    const mon = nd.toLocaleDateString("de-DE", { month: "short" }).toUpperCase();
     out.push({ iso, day, num, mon });
   }
   return out;
 }
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  pending_payment: { label: "Pendiente pago", color: colors.warning, bg: "#FFF3E0" },
-  paid: { label: "Pagado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  confirmed: { label: "Confirmado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  in_progress: { label: "En progreso", color: colors.brandPrimary, bg: colors.brandTertiary },
-  completed: { label: "Completado", color: colors.success, bg: "#DFF6E3" },
-  cancelled: { label: "Cancelado", color: colors.error, bg: "#FFE3E1" },
+  pending_payment: { label: "Zahlung ausst.", color: colors.warning, bg: "#FFF3E0" },
+  paid: { label: "Bezahlt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  confirmed: { label: "Bestätigt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  in_progress: { label: "In Bearbeitung", color: colors.brandPrimary, bg: colors.brandTertiary },
+  completed: { label: "Abgeschlossen", color: colors.success, bg: "#DFF6E3" },
+  cancelled: { label: "Storniert", color: colors.error, bg: "#FFE3E1" },
 };
 
 const NEXT_STATUS: Record<string, string> = {
@@ -42,9 +42,9 @@ const NEXT_STATUS: Record<string, string> = {
 };
 
 const STATUS_ACTION: Record<string, string> = {
-  paid: "Confirmar",
-  confirmed: "Iniciar",
-  in_progress: "Completar",
+  paid: "Bestätigen",
+  confirmed: "Starten",
+  in_progress: "Abschließen",
 };
 
 export default function AdminAgenda() {
@@ -114,8 +114,8 @@ export default function AdminAgenda() {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView edges={["top"]} style={styles.header}>
         <View>
-          <Text style={styles.headerBrand}>Panel de agenda</Text>
-          <Text style={styles.headerSmall}>Todas tus citas en un lugar</Text>
+          <Text style={styles.headerBrand}>Terminkalender</Text>
+          <Text style={styles.headerSmall}>Alle Termine an einem Ort</Text>
         </View>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <Pressable testID="admin-services-btn" onPress={() => router.push("/admin/services")} style={styles.headerBtn}>
@@ -136,24 +136,24 @@ export default function AdminAgenda() {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{stats.today_bookings}</Text>
-              <Text style={styles.statLabel}>Hoy</Text>
+              <Text style={styles.statLabel}>Heute</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{stats.total_bookings}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={styles.statLabel}>Gesamt</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>€{stats.revenue.toFixed(0)}</Text>
-              <Text style={styles.statLabel}>Ingresos</Text>
+              <Text style={styles.statLabel}>Umsatz</Text>
             </View>
           </View>
         )}
 
         {/* Date strip */}
         <View style={styles.stripHeader}>
-          <Text style={styles.stripTitle}>{showAll ? "Todas las citas" : "Agenda del día"}</Text>
+          <Text style={styles.stripTitle}>{showAll ? "Alle Termine" : "Tagesagenda"}</Text>
           <Pressable testID="toggle-all-btn" onPress={() => setShowAll((v) => !v)}>
-            <Text style={styles.linkTxt}>{showAll ? "Ver por día" : "Ver todas"}</Text>
+            <Text style={styles.linkTxt}>{showAll ? "Nach Tag" : "Alle anzeigen"}</Text>
           </Pressable>
         </View>
 
@@ -187,7 +187,7 @@ export default function AdminAgenda() {
           ) : bookings.length === 0 ? (
             <View testID="empty-agenda" style={styles.empty}>
               <Ionicons name="calendar-outline" size={40} color={colors.brandPrimary} />
-              <Text style={styles.emptyText}>No hay limpiezas agendadas.</Text>
+              <Text style={styles.emptyText}>Keine Reinigungen geplant.</Text>
             </View>
           ) : (
             bookings.map((b) => (
@@ -200,7 +200,7 @@ export default function AdminAgenda() {
                 <View style={styles.cardTop}>
                   <View style={styles.timeBox}>
                     <Text style={styles.timeTxt}>{b.scheduled_time}</Text>
-                    <Text style={styles.timeDate}>{new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("es", { day: "2-digit", month: "short" })}</Text>
+                    <Text style={styles.timeDate}>{new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "short" })}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardName}>{b.customer_name}</Text>
@@ -223,7 +223,7 @@ export default function AdminAgenda() {
                     style={styles.routeBtn}
                   >
                     <Ionicons name="navigate" size={14} color={colors.onBrandPrimary} />
-                    <Text style={styles.routeText}>Ver ruta</Text>
+                    <Text style={styles.routeText}>Route</Text>
                   </Pressable>
                   <Pressable
                     testID={`call-${b.id}`}
@@ -231,7 +231,7 @@ export default function AdminAgenda() {
                     style={styles.callBtn}
                   >
                     <Ionicons name="call" size={14} color={colors.onBrandSecondary} />
-                    <Text style={styles.callText}>Llamar</Text>
+                    <Text style={styles.callText}>Anrufen</Text>
                   </Pressable>
                 </View>
               </Pressable>
@@ -248,12 +248,12 @@ export default function AdminAgenda() {
             {selected && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={styles.modalTitle}>{selected.service_name}</Text>
-                <Text style={styles.modalSubtitle}>Cita de {selected.customer_name}</Text>
+                <Text style={styles.modalSubtitle}>Termin von {selected.customer_name}</Text>
 
                 <View style={styles.detailRow}>
                   <Ionicons name="calendar" size={18} color={colors.brandPrimary} />
                   <Text style={styles.detailText}>
-                    {new Date(selected.scheduled_date + "T00:00:00").toLocaleDateString("es", { weekday: "long", day: "2-digit", month: "long" })} · {selected.scheduled_time}
+                    {new Date(selected.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })} · {selected.scheduled_time} Uhr
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
@@ -279,7 +279,7 @@ export default function AdminAgenda() {
 
                 <Pressable testID="modal-route-btn" onPress={() => openMaps(selected.address)} style={styles.modalPrimary}>
                   <Ionicons name="navigate" size={18} color={colors.onBrandPrimary} />
-                  <Text style={styles.modalPrimaryTxt}>Abrir ruta en mapas</Text>
+                  <Text style={styles.modalPrimaryTxt}>Route in Maps öffnen</Text>
                 </Pressable>
 
                 {NEXT_STATUS[selected.status] && (
@@ -288,7 +288,7 @@ export default function AdminAgenda() {
                     onPress={() => updateStatus(selected.id, NEXT_STATUS[selected.status])}
                     style={styles.modalSecondary}
                   >
-                    <Text style={styles.modalSecondaryTxt}>{STATUS_ACTION[selected.status]} cita</Text>
+                    <Text style={styles.modalSecondaryTxt}>{STATUS_ACTION[selected.status]}</Text>
                   </Pressable>
                 )}
 
@@ -298,12 +298,12 @@ export default function AdminAgenda() {
                     onPress={() => updateStatus(selected.id, "cancelled")}
                     style={styles.modalDanger}
                   >
-                    <Text style={styles.modalDangerTxt}>Cancelar cita</Text>
+                    <Text style={styles.modalDangerTxt}>Termin stornieren</Text>
                   </Pressable>
                 )}
 
                 <Pressable testID="modal-close-btn" onPress={() => setSelected(null)} style={styles.modalGhost}>
-                  <Text style={styles.modalGhostTxt}>Cerrar</Text>
+                  <Text style={styles.modalGhostTxt}>Schließen</Text>
                 </Pressable>
               </ScrollView>
             )}

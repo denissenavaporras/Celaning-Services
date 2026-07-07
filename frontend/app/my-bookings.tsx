@@ -8,12 +8,12 @@ import { colors, radius, spacing, typography } from "@/src/lib/theme";
 import { api, getDeviceId, Booking } from "@/src/lib/api";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  pending_payment: { label: "Pago pendiente", color: colors.warning, bg: "#FFF3E0" },
-  paid: { label: "Pagado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  confirmed: { label: "Confirmado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  in_progress: { label: "En progreso", color: colors.brandPrimary, bg: colors.brandTertiary },
-  completed: { label: "Completado", color: colors.success, bg: "#DFF6E3" },
-  cancelled: { label: "Cancelado", color: colors.error, bg: "#FFE3E1" },
+  pending_payment: { label: "Zahlung ausstehend", color: colors.warning, bg: "#FFF3E0" },
+  paid: { label: "Bezahlt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  confirmed: { label: "Bestätigt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  in_progress: { label: "In Bearbeitung", color: colors.brandPrimary, bg: colors.brandTertiary },
+  completed: { label: "Abgeschlossen", color: colors.success, bg: "#DFF6E3" },
+  cancelled: { label: "Storniert", color: colors.error, bg: "#FFE3E1" },
 };
 
 export default function MyBookings() {
@@ -52,7 +52,7 @@ export default function MyBookings() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Mis citas</Text>
+        <Text style={styles.headerTitle}>Meine Termine</Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -66,10 +66,10 @@ export default function MyBookings() {
           {bookings.length === 0 ? (
             <View testID="empty-list" style={styles.empty}>
               <Ionicons name="calendar-clear-outline" size={48} color={colors.brandPrimary} />
-              <Text style={styles.emptyTitle}>No tienes citas todavía</Text>
-              <Text style={styles.emptyText}>Agenda tu primera limpieza para verla aquí.</Text>
+              <Text style={styles.emptyTitle}>Noch keine Termine</Text>
+              <Text style={styles.emptyText}>Buchen Sie Ihre erste Reinigung, um sie hier zu sehen.</Text>
               <Pressable testID="empty-book-btn" onPress={() => router.push("/book")} style={styles.emptyBtn}>
-                <Text style={styles.emptyBtnText}>Agendar ahora</Text>
+                <Text style={styles.emptyBtnText}>Jetzt buchen</Text>
               </Pressable>
             </View>
           ) : (
@@ -79,7 +79,7 @@ export default function MyBookings() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{b.service_name}</Text>
                     <Text style={styles.metaTxt}>
-                      {new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("es", { weekday: "short", day: "2-digit", month: "short" })} · {b.scheduled_time}
+                      {new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" })} · {b.scheduled_time} Uhr
                     </Text>
                   </View>
                   <View style={[styles.pill, { backgroundColor: STATUS_META[b.status]?.bg }]}>
@@ -89,11 +89,11 @@ export default function MyBookings() {
                 <Text style={styles.addr}><Ionicons name="location" size={12} /> {b.address}</Text>
                 <View style={styles.actions}>
                   <Pressable testID={`open-detail-${b.id}`} onPress={() => router.push({ pathname: "/success", params: { id: b.id } })} style={styles.actionGhost}>
-                    <Text style={styles.actionGhostTxt}>Ver detalles</Text>
+                    <Text style={styles.actionGhostTxt}>Details</Text>
                   </Pressable>
                   <Pressable testID={`open-maps-${b.id}`} onPress={() => openMaps(b.address)} style={styles.actionSolid}>
                     <Ionicons name="navigate" size={14} color={colors.onBrandPrimary} />
-                    <Text style={styles.actionSolidTxt}>Ruta</Text>
+                    <Text style={styles.actionSolidTxt}>Route</Text>
                   </Pressable>
                 </View>
                 {b.status === "pending_payment" && (
@@ -103,7 +103,7 @@ export default function MyBookings() {
                     style={styles.payLink}
                   >
                     <Ionicons name="card" size={14} color={colors.warning} />
-                    <Text style={styles.payLinkTxt}>Completar pago</Text>
+                    <Text style={styles.payLinkTxt}>Zahlung abschließen</Text>
                   </Pressable>
                 )}
               </View>
@@ -117,32 +117,23 @@ export default function MyBookings() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    backgroundColor: colors.surface,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm,
+    borderBottomWidth: 1, borderBottomColor: colors.divider, backgroundColor: colors.surface,
   },
   backBtn: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.brandTertiary, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface },
 
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  empty: { alignItems: "center", padding: spacing.xl, marginTop: spacing.xxl },
+  empty: { alignItems: "center", padding: spacing.xl, marginTop: 48 },
   emptyTitle: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface, marginTop: spacing.md },
   emptyText: { fontSize: typography.sizes.base, color: colors.onSurfaceTertiary, textAlign: "center", marginTop: spacing.sm },
   emptyBtn: { marginTop: spacing.lg, backgroundColor: colors.brandPrimary, paddingHorizontal: spacing.xl, paddingVertical: 12, borderRadius: radius.pill },
   emptyBtnText: { color: colors.onBrandPrimary, fontWeight: "700" },
 
   card: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.lg,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   rowTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md, marginBottom: spacing.sm },
   name: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface },

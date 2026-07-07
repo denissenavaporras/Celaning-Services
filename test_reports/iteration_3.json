@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 3 verification PASS on https://cleanroute-app-2.preview.emergentagent.com. Focus: German localization + time-slot restriction (14:00-19:00) + 4 discount codes on /info. BACKEND (19/19 pytest passing): GET /api/services returns 4 German-named packs — Basis-Paket €66 / Familien-Paket €112.5 / Premium-Paket €120 / VIP-Monatspaket €2000 — with German descriptions (Spanish markers 'Limpieza', 'Cuidado', 'niños', 'Ideal para', 'hijos' all absent). Bookings + payment flow still green: POST /api/bookings → pending_payment, POST /api/bookings/{id}/pay with 4242 4242 4242 4242 → 200 paid (payment_ref MOCK-…), with 4000 0000 0000 0002 → 402. Admin login (admin@limpia.com/admin123) works, protected endpoints (bookings/stats/status/services CRUD) all working. FRONTEND (all screens verified in 390x844 mobile viewport): (1) HOME — Cleaning Service Wels, 'Reinigung + Kinderbetreuung von Dennisse Nava', hero 'Sauberes Zuhause und glückliche Kinder in Wels' (rendered on two lines but present in normalized innerText), 'Verfügbar Mo–So von 14:00 bis 19:00 Uhr', CTA 'Termin buchen', empty-state 'Noch keine Termine', bottom bar 'Meine Termine' + 'Neuer Termin' — ALL OK. (2) BOOK — header 'Termin buchen', banner 'Verfügbar Mo–So von 14:00 bis 19:00 Uhr', steps 'Service auswählen' / 'Tag wählen' / 'Uhrzeit wählen' with helper 'Termine von 14:00 bis 19:00 Uhr verfügbar.', TIME SLOTS enumerated via data-testid: exactly ['14:00','15:00','16:00','17:00','18:00','19:00'] — no 20:00 or 21:00, no missing slots. Step-4 labels 'Vollständiger Name'/'Telefon'/'Vollständige Adresse'/'Notizen (optional)' + button 'Weiter zur Zahlung' — ALL OK. (3) INFO — badges include 'Mo–So 14:00–19:00', section 'Verfügbarkeit' with 'Montag bis Sonntag' + '14:00 bis 19:00', sections 'Wer bin ich', 'Was ich anbiete', 'Meine speziellen Pakete', 'Spezielle Angebote' — 4 discount CODE PILLS visible (WILLKOMMEN10, KUEHL40, FREUNDIN2H, MONAT5), 'Zahlungsmethoden', 'Servicegebiet', 'Kundenbewertungen', 'Vertrauen & Sicherheit' (present in innerText; the & is HTML-escaped as &amp; in raw markup), 'Kontakt' with +43 664 101 9869 and denissenavaporras@gmail.com — ALL OK. (4) MY-BOOKINGS — 'Meine Termine', 'Noch keine Termine', 'Jetzt buchen' — ALL OK. (5) ADMIN LOGIN — 'Administrator-Zugang', 'Terminkalender', 'E-Mail', 'Passwort', 'Anmelden' — ALL OK. Login with correct creds redirects to /admin. Error string 'Ungültige Zugangsdaten' present in code at admin/login.tsx:36 (could not re-trigger in same session because session cookie persisted). (6) ADMIN AGENDA — stats 'Heute'/'Gesamt'/'Umsatz' (0/5/€198), 'Tagesagenda' + 'Alle anzeigen', empty-state 'Keine Reinigungen geplant.'. Card buttons 'Route'/'Anrufen' — only visible inside a booking modal (day had 0 bookings during test); string 'Anrufen' is confirmed to exist in admin/index.tsx:234. (7) ADMIN SERVICES — 'Services und Preise' + 4 German packs; opening the 'Neuer Service' form exposes all German labels 'Beschreibung' / 'Preis (EUR)' / 'Dauer (Min.)' / 'Bild-URL' + toggle 'Aktiv' + buttons 'Speichern'/'Abbrechen' — ALL OK. NO SPANISH LEAKS DETECTED on any screen (probes 'Cita', 'Citas', 'Ver ruta', 'Continuar', 'Pagar', 'Guardar', 'Selecciona', 'Volver al inicio', '¡Cita', 'Panel de agenda', 'Ingresos' all absent). Only pre-existing non-blocking observation: react-native-web repeated 'shadow* deprecated, use boxShadow' console warnings (same as iteration 2).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "StyleSheet.shadow*", "issue": "react-native-web logs repeated deprecation warnings: 'shadow*' style props are deprecated. Use 'boxShadow'. Non-blocking, cosmetic web-only warning. Reference: shadowColor/shadowOffset/shadowOpacity/shadowRadius across cards in /app/frontend/app/index.tsx, /app/frontend/app/book.tsx, /app/frontend/app/info.tsx, /app/frontend/app/admin/*.tsx."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: migrate shadow* style props to boxShadow (or Platform.select) to silence react-native-web deprecation warnings on web preview (also flagged in iteration 2)."
+  ],
+  "critical_code_review_comments": [
+    "Time-slot constant TIME_SLOTS = ['14:00','15:00','16:00','17:00','18:00','19:00'] correctly restricted in /app/frontend/app/book.tsx:23. Helper + banner strings match spec.",
+    "Discount codes hardcoded in /app/frontend/app/info.tsx:45-48 as [WILLKOMMEN10, KUEHL40, FREUNDIN2H, MONAT5] — matches spec exactly with German titles/bodies.",
+    "Backend re-seed of German packs (Basis-/Familien-/Premium-/VIP-Monatspaket) confirmed via GET /api/services; seed_version bump appears to have worked.",
+    "Login error message 'Ungültige Zugangsdaten' exists in /app/frontend/app/admin/login.tsx:36 (setError fallback)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend.py (updated expected pack names to German + added Spanish-marker guard in descriptions)",
+    "/app/test_reports/iteration_3.json (new)",
+    "/app/test_reports/pytest/pytest_results.xml (refreshed)"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% for German localization + time-slot restriction + discount-codes coverage across all 7 screens"},
+  "seed_data_creation": "Backend test suite created a temporary paid booking (device_id TEST_device_<uuid>) and a TEST_ service that was cleaned up (delete verified with 404 on second delete). Admin agenda shows 0/5/€198 (Heute/Gesamt/Umsatz).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "German localization iteration complete. Base URL: https://cleanroute-app-2.preview.emergentagent.com. Admin creds admin@limpia.com/admin123. Payment: 4242→200 / 4000-…-0002→402. Service pack names are now GERMAN: Basis-Paket €66, Familien-Paket €112.5, Premium-Paket €120, VIP-Monatspaket €2000. Time slots RESTRICTED to 14:00–19:00 in TIME_SLOTS at book.tsx:23. Discount codes hardcoded at info.tsx:45-48 (WILLKOMMEN10/KUEHL40/FREUNDIN2H/MONAT5). testIDs unchanged from iteration 2: service-<id>, day-<iso>, time-<hh:mm>, input-name/phone/address/notes, continue-payment-btn, card-number/holder/exp/cvc, pay-now-btn, success-title/open-maps-btn/back-home-btn, admin-services-btn/logout-btn/toggle-all-btn/admin-day-<iso>/admin-booking-<id>/modal-route-btn/modal-next-status-btn/modal-cancel-btn/modal-close-btn, add-service-btn/svc-<id>/edit-<id>/del-<id>/form-name/desc/price/duration/image/active-toggle/save-btn/cancel-btn.",
+  "rca_of_issue": "N/A — no bugs. Iteration 3 German-localization + schedule + discount-codes verification: all pass."
+}

@@ -21,12 +21,12 @@ const HERO_IMG =
   "https://images.pexels.com/photos/5998138/pexels-photo-5998138.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  pending_payment: { label: "Pago pendiente", color: colors.warning, bg: "#FFF3E0" },
-  paid: { label: "Pagado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  confirmed: { label: "Confirmado", color: colors.brandPrimary, bg: colors.brandSecondary },
-  in_progress: { label: "En progreso", color: colors.brandPrimary, bg: colors.brandTertiary },
-  completed: { label: "Completado", color: colors.success, bg: "#DFF6E3" },
-  cancelled: { label: "Cancelado", color: colors.error, bg: "#FFE3E1" },
+  pending_payment: { label: "Zahlung ausstehend", color: colors.warning, bg: "#FFF3E0" },
+  paid: { label: "Bezahlt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  confirmed: { label: "Bestätigt", color: colors.brandPrimary, bg: colors.brandSecondary },
+  in_progress: { label: "In Bearbeitung", color: colors.brandPrimary, bg: colors.brandTertiary },
+  completed: { label: "Abgeschlossen", color: colors.success, bg: "#DFF6E3" },
+  cancelled: { label: "Storniert", color: colors.error, bg: "#FFE3E1" },
 };
 
 export default function Home() {
@@ -49,15 +49,8 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const upcoming = bookings.filter((b) => !["cancelled", "completed"].includes(b.status));
 
@@ -79,18 +72,9 @@ export default function Home() {
           />
           <SafeAreaView edges={["top"]} style={styles.heroContent}>
             <View style={styles.heroTop}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 }}>
-                <View style={styles.logoBadge}>
-                  <Image
-                    source={require("../assets/images/logo.png")}
-                    style={{ width: 44, height: 44 }}
-                    contentFit="contain"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.heroBrand}>Cleaning Service Wels</Text>
-                  <Text style={styles.heroSubtitle}>Limpieza + Cuidado infantil · Dennisse Nava</Text>
-                </View>
+              <View>
+                <Text style={styles.heroBrand}>Cleaning Service Wels</Text>
+                <Text style={styles.heroSubtitle}>Reinigung + Kinderbetreuung von Dennisse Nava</Text>
               </View>
               <Pressable
                 testID="admin-shortcut-btn"
@@ -102,13 +86,14 @@ export default function Home() {
               </Pressable>
             </View>
             <View style={styles.heroBottom}>
-              <Text style={styles.heroTitle}>Hogar impecable y{"\n"}niños felices en Wels</Text>
+              <Text style={styles.heroTitle}>Sauberes Zuhause und{"\n"}glückliche Kinder in Wels</Text>
+              <Text style={styles.heroSub}>Verfügbar Mo–So von 14:00 bis 19:00 Uhr</Text>
               <Pressable
                 testID="book-new-btn"
                 onPress={() => router.push("/book")}
                 style={({ pressed }) => [styles.ctaPrimary, pressed && { opacity: 0.85 }]}
               >
-                <Text style={styles.ctaPrimaryText}>Agendar Cita</Text>
+                <Text style={styles.ctaPrimaryText}>Termin buchen</Text>
                 <Ionicons name="arrow-forward" size={18} color={colors.onBrandPrimary} />
               </Pressable>
             </View>
@@ -118,10 +103,10 @@ export default function Home() {
         {/* Upcoming bookings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Próximas citas</Text>
+            <Text style={styles.sectionTitle}>Nächste Termine</Text>
             {bookings.length > 0 && (
               <Pressable testID="see-all-btn" onPress={() => router.push("/my-bookings")}>
-                <Text style={styles.linkText}>Ver todas</Text>
+                <Text style={styles.linkText}>Alle anzeigen</Text>
               </Pressable>
             )}
           </View>
@@ -131,8 +116,8 @@ export default function Home() {
           ) : upcoming.length === 0 ? (
             <View testID="empty-bookings" style={styles.emptyCard}>
               <Ionicons name="calendar-outline" size={40} color={colors.brandPrimary} />
-              <Text style={styles.emptyTitle}>Aún no tienes citas</Text>
-              <Text style={styles.emptyText}>Agenda tu primera limpieza en menos de un minuto.</Text>
+              <Text style={styles.emptyTitle}>Noch keine Termine</Text>
+              <Text style={styles.emptyText}>Buchen Sie Ihre erste Reinigung in weniger als einer Minute.</Text>
             </View>
           ) : (
             upcoming.map((b) => (
@@ -146,7 +131,7 @@ export default function Home() {
                   <View style={styles.dateBox}>
                     <Text style={styles.dateDay}>{b.scheduled_date.slice(-2)}</Text>
                     <Text style={styles.dateMon}>
-                      {new Date(b.scheduled_date).toLocaleDateString("es", { month: "short" }).toUpperCase()}
+                      {new Date(b.scheduled_date).toLocaleDateString("de-DE", { month: "short" }).toUpperCase()}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -180,33 +165,33 @@ export default function Home() {
               <Ionicons name="person" size={26} color={colors.onBrandPrimary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.aboutName}>Soy Dennisse Nava Porras</Text>
+              <Text style={styles.aboutName}>Ich bin Dennisse Nava Porras</Text>
               <Text style={styles.aboutBody}>
-                5 años cuidando hogares y niños en Wels. Productos ecológicos, formación en primeros auxilios y estimulación infantil.
+                5 Jahre Erfahrung mit Haushalten und Kindern in Wels. Ökologische Produkte, Erste-Hilfe-Ausbildung und Frühförderung.
               </Text>
-              <Text style={styles.aboutLink}>Conoce mis packs y ofertas →</Text>
+              <Text style={styles.aboutLink}>Pakete & Angebote entdecken →</Text>
             </View>
           </Pressable>
         </View>
 
         {/* Value props */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>¿Por qué elegirnos?</Text>
+          <Text style={styles.sectionTitle}>Warum uns wählen?</Text>
           <View style={styles.featuresRow}>
             <View style={styles.featureCard}>
               <Ionicons name="shield-checkmark" size={22} color={colors.brandPrimary} />
-              <Text style={styles.featureTitle}>Verificada</Text>
-              <Text style={styles.featureText}>Primeros auxilios y seguro RC</Text>
+              <Text style={styles.featureTitle}>Geprüft</Text>
+              <Text style={styles.featureText}>Erste Hilfe + Haftpflicht</Text>
             </View>
             <View style={styles.featureCard}>
               <Ionicons name="card" size={22} color={colors.brandPrimary} />
-              <Text style={styles.featureTitle}>Pago seguro</Text>
-              <Text style={styles.featureText}>Paga en línea antes del servicio</Text>
+              <Text style={styles.featureTitle}>Sichere Zahlung</Text>
+              <Text style={styles.featureText}>Online vor dem Service</Text>
             </View>
             <View style={styles.featureCard}>
               <Ionicons name="leaf" size={22} color={colors.brandPrimary} />
-              <Text style={styles.featureTitle}>Ecológico</Text>
-              <Text style={styles.featureText}>Sin químicos, apto niños</Text>
+              <Text style={styles.featureTitle}>Umweltfreundlich</Text>
+              <Text style={styles.featureText}>Ohne Chemie, kinderfreundlich</Text>
             </View>
           </View>
         </View>
@@ -220,7 +205,7 @@ export default function Home() {
           style={styles.bottomBtnSecondary}
         >
           <Ionicons name="list-outline" size={18} color={colors.onBrandSecondary} />
-          <Text style={styles.bottomBtnSecondaryText}>Mis citas</Text>
+          <Text style={styles.bottomBtnSecondaryText}>Meine Termine</Text>
         </Pressable>
         <Pressable
           testID="book-sticky-btn"
@@ -228,7 +213,7 @@ export default function Home() {
           style={styles.bottomBtnPrimary}
         >
           <Ionicons name="add-circle" size={18} color={colors.onBrandPrimary} />
-          <Text style={styles.bottomBtnPrimaryText}>Nueva cita</Text>
+          <Text style={styles.bottomBtnPrimaryText}>Neuer Termin</Text>
         </Pressable>
       </View>
     </View>
@@ -237,27 +222,14 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   hero: {
-    height: 320,
+    height: 340,
     backgroundColor: colors.surfaceInverse,
     overflow: "hidden",
   },
   heroContent: { flex: 1, paddingHorizontal: spacing.lg, justifyContent: "space-between" },
   heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: spacing.sm },
-  heroBrand: { color: colors.onSurfaceInverse, fontSize: typography.sizes.lg, fontWeight: "800" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: typography.sizes.sm, marginTop: 2 },
-  logoBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+  heroBrand: { color: colors.onSurfaceInverse, fontSize: typography.sizes.xl, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: typography.sizes.base, marginTop: 2 },
   adminChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -270,8 +242,9 @@ const styles = StyleSheet.create({
   adminChipText: { color: colors.onSurfaceInverse, fontSize: typography.sizes.sm, fontWeight: "600" },
   heroBottom: { paddingBottom: spacing.xl },
   heroTitle: { color: colors.onSurfaceInverse, fontSize: typography.sizes.xxl, fontWeight: "800", lineHeight: 32 },
+  heroSub: { color: "rgba(255,255,255,0.9)", fontSize: typography.sizes.sm, marginTop: 6, fontWeight: "600" },
   ctaPrimary: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     backgroundColor: colors.brandPrimary,
     paddingVertical: 14,
     paddingHorizontal: spacing.xl,

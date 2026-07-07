@@ -19,7 +19,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, radius, spacing, typography } from "@/src/lib/theme";
 import { api, getDeviceId, Service } from "@/src/lib/api";
 
-const TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+// Verfügbarkeit: Mo-So von 14:00 bis 19:00 Uhr
+const TIME_SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
 function getNextDays(count: number) {
   const out: { iso: string; day: string; num: string; mon: string }[] = [];
@@ -28,9 +29,9 @@ function getNextDays(count: number) {
     const nd = new Date(d);
     nd.setDate(d.getDate() + i);
     const iso = nd.toISOString().slice(0, 10);
-    const day = nd.toLocaleDateString("es", { weekday: "short" }).slice(0, 3).toUpperCase();
+    const day = nd.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 3).toUpperCase();
     const num = String(nd.getDate()).padStart(2, "0");
-    const mon = nd.toLocaleDateString("es", { month: "short" }).toUpperCase();
+    const mon = nd.toLocaleDateString("de-DE", { month: "short" }).toUpperCase();
     out.push({ iso, day, num, mon });
   }
   return out;
@@ -61,7 +62,7 @@ export default function BookScreen() {
       setLoading(false);
     }).catch(() => setLoading(false));
     setSelectedDate(days[1]?.iso || "");
-    setSelectedTime("10:00");
+    setSelectedTime("14:00");
   }, []);
 
   const canContinue =
@@ -86,7 +87,7 @@ export default function BookScreen() {
       });
       router.replace({ pathname: "/checkout", params: { id: booking.id } });
     } catch (e: any) {
-      setError(e.message || "Error al crear la cita");
+      setError(e.message || "Fehler beim Erstellen des Termins");
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +108,7 @@ export default function BookScreen() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Agendar cita</Text>
+        <Text style={styles.headerTitle}>Termin buchen</Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -121,8 +122,16 @@ export default function BookScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Availability banner */}
+          <View testID="availability-banner" style={styles.availBanner}>
+            <Ionicons name="time" size={18} color={colors.brandPrimary} />
+            <Text style={styles.availText}>
+              Verfügbar Mo–So von 14:00 bis 19:00 Uhr
+            </Text>
+          </View>
+
           {/* Services */}
-          <Text style={styles.label}>1. Selecciona el servicio</Text>
+          <Text style={styles.label}>1. Service auswählen</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -140,7 +149,7 @@ export default function BookScreen() {
                   <Image source={s.image_url} style={styles.serviceImg} contentFit="cover" />
                   <View style={{ padding: spacing.md }}>
                     <Text style={styles.serviceName}>{s.name}</Text>
-                    <Text style={styles.serviceMeta}>{s.duration_minutes / 60} h · desde</Text>
+                    <Text style={styles.serviceMeta}>{s.duration_minutes / 60} Std. · ab</Text>
                     <Text style={styles.servicePrice}>€{s.price.toFixed(0)}</Text>
                   </View>
                   {selected && (
@@ -154,7 +163,7 @@ export default function BookScreen() {
           </ScrollView>
 
           {/* Date */}
-          <Text style={[styles.label, { marginTop: spacing.xl }]}>2. Elige el día</Text>
+          <Text style={[styles.label, { marginTop: spacing.xl }]}>2. Tag wählen</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -177,11 +186,12 @@ export default function BookScreen() {
           </ScrollView>
 
           {/* Time */}
-          <Text style={[styles.label, { marginTop: spacing.xl }]}>3. Elige la hora</Text>
+          <Text style={[styles.label, { marginTop: spacing.xl }]}>3. Uhrzeit wählen</Text>
+          <Text style={styles.helperText}>Termine von 14:00 bis 19:00 Uhr verfügbar.</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.lg }}
+            contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.lg, marginTop: spacing.sm }}
           >
             {TIME_SLOTS.map((t) => {
               const sel = selectedTime === t;
@@ -199,49 +209,49 @@ export default function BookScreen() {
           </ScrollView>
 
           {/* Customer info */}
-          <Text style={[styles.label, { marginTop: spacing.xl }]}>4. Tus datos y dirección</Text>
+          <Text style={[styles.label, { marginTop: spacing.xl }]}>4. Ihre Daten und Adresse</Text>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nombre completo</Text>
+            <Text style={styles.inputLabel}>Vollständiger Name</Text>
             <TextInput
               testID="input-name"
               value={name}
               onChangeText={setName}
-              placeholder="Ej. María López"
+              placeholder="z.B. Maria Huber"
               placeholderTextColor={colors.info}
               style={styles.input}
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Teléfono</Text>
+            <Text style={styles.inputLabel}>Telefon</Text>
             <TextInput
               testID="input-phone"
               value={phone}
               onChangeText={setPhone}
-              placeholder="Ej. 55 1234 5678"
+              placeholder="z.B. +43 664 123 4567"
               placeholderTextColor={colors.info}
               keyboardType="phone-pad"
               style={styles.input}
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Dirección completa</Text>
+            <Text style={styles.inputLabel}>Vollständige Adresse</Text>
             <TextInput
               testID="input-address"
               value={address}
               onChangeText={setAddress}
-              placeholder="Calle, número, colonia, ciudad"
+              placeholder="Straße, Hausnummer, PLZ, Ort"
               placeholderTextColor={colors.info}
               style={styles.input}
               multiline
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Notas (opcional)</Text>
+            <Text style={styles.inputLabel}>Notizen (optional)</Text>
             <TextInput
               testID="input-notes"
               value={notes}
               onChangeText={setNotes}
-              placeholder="Instrucciones especiales, entrada, mascotas..."
+              placeholder="Besondere Hinweise, Eingang, Haustiere…"
               placeholderTextColor={colors.info}
               style={[styles.input, { height: 72 }]}
               multiline
@@ -254,7 +264,7 @@ export default function BookScreen() {
         {/* Sticky CTA */}
         <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.stickySmall}>Total estimado</Text>
+            <Text style={styles.stickySmall}>Geschätzter Gesamtpreis</Text>
             <Text style={styles.stickyPrice}>€{selectedService ? selectedService.price.toFixed(0) : "0"}</Text>
           </View>
           <Pressable
@@ -267,7 +277,7 @@ export default function BookScreen() {
               <ActivityIndicator color={colors.onBrandPrimary} />
             ) : (
               <>
-                <Text style={styles.continueText}>Continuar al pago</Text>
+                <Text style={styles.continueText}>Weiter zur Zahlung</Text>
                 <Ionicons name="arrow-forward" size={18} color={colors.onBrandPrimary} />
               </>
             )}
@@ -293,7 +303,19 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: radius.pill, backgroundColor: colors.brandTertiary },
 
+  availBanner: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.brandTertiary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  availText: { flex: 1, color: colors.onBrandTertiary, fontWeight: "700", fontSize: typography.sizes.sm },
+
   label: { fontSize: typography.sizes.lg, fontWeight: "700", color: colors.onSurface, marginTop: spacing.xl, marginBottom: spacing.md },
+  helperText: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, marginTop: -spacing.sm },
 
   serviceCard: {
     width: 180,

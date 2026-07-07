@@ -32,7 +32,7 @@ export default function Success() {
   }
 
   if (loading) return <View style={styles.loader}><ActivityIndicator color={colors.brandPrimary} /></View>;
-  if (!booking) return <View style={styles.loader}><Text>Cita no encontrada</Text></View>;
+  if (!booking) return <View style={styles.loader}><Text>Termin nicht gefunden</Text></View>;
 
   const isPaid = ["paid", "confirmed", "in_progress", "completed"].includes(booking.status);
 
@@ -47,12 +47,12 @@ export default function Success() {
             </View>
           </View>
           <Text testID="success-title" style={styles.title}>
-            {isPaid ? "¡Cita confirmada!" : "Cita pendiente de pago"}
+            {isPaid ? "Termin bestätigt!" : "Zahlung ausstehend"}
           </Text>
           <Text style={styles.subtitle}>
             {isPaid
-              ? "Recibirás una notificación cuando el equipo esté en camino."
-              : "Completa el pago para asegurar tu horario."}
+              ? "Sie erhalten eine Benachrichtigung, sobald das Team unterwegs ist."
+              : "Schließen Sie die Zahlung ab, um Ihren Termin zu sichern."}
           </Text>
 
           <View style={styles.card}>
@@ -61,7 +61,7 @@ export default function Success() {
                 <Ionicons name="sparkles" size={20} color={colors.brandPrimary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowSmall}>Servicio</Text>
+                <Text style={styles.rowSmall}>Service</Text>
                 <Text style={styles.rowBig}>{booking.service_name}</Text>
               </View>
               <Text style={styles.priceTxt}>€{booking.service_price.toFixed(0)}</Text>
@@ -72,9 +72,9 @@ export default function Success() {
                 <Ionicons name="calendar" size={20} color={colors.brandPrimary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowSmall}>Fecha y hora</Text>
+                <Text style={styles.rowSmall}>Datum & Uhrzeit</Text>
                 <Text style={styles.rowBig}>
-                  {new Date(booking.scheduled_date + "T00:00:00").toLocaleDateString("es", { weekday: "long", day: "2-digit", month: "long" })} · {booking.scheduled_time}
+                  {new Date(booking.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })} · {booking.scheduled_time} Uhr
                 </Text>
               </View>
             </View>
@@ -84,7 +84,7 @@ export default function Success() {
                 <Ionicons name="location" size={20} color={colors.brandPrimary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowSmall}>Dirección</Text>
+                <Text style={styles.rowSmall}>Adresse</Text>
                 <Text style={styles.rowBig}>{booking.address}</Text>
               </View>
             </View>
@@ -94,7 +94,7 @@ export default function Success() {
                 <Ionicons name="person" size={20} color={colors.brandPrimary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowSmall}>A nombre de</Text>
+                <Text style={styles.rowSmall}>Kunde</Text>
                 <Text style={styles.rowBig}>{booking.customer_name}</Text>
                 <Text style={styles.rowSmall}>{booking.customer_phone}</Text>
               </View>
@@ -107,7 +107,7 @@ export default function Success() {
                     <Ionicons name="card" size={20} color={colors.brandPrimary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowSmall}>Referencia de pago</Text>
+                    <Text style={styles.rowSmall}>Zahlungsreferenz</Text>
                     <Text style={styles.rowBig}>{booking.payment_ref}</Text>
                   </View>
                 </View>
@@ -117,7 +117,7 @@ export default function Success() {
 
           <Pressable testID="open-maps-btn" onPress={openMaps} style={styles.mapsBtn}>
             <Ionicons name="navigate" size={18} color={colors.onBrandPrimary} />
-            <Text style={styles.mapsText}>Ver ruta en mapas</Text>
+            <Text style={styles.mapsText}>Route in Maps anzeigen</Text>
           </Pressable>
 
           {!isPaid && (
@@ -126,12 +126,12 @@ export default function Success() {
               onPress={() => router.replace({ pathname: "/checkout", params: { id: booking.id } })}
               style={styles.altBtn}
             >
-              <Text style={styles.altBtnText}>Ir a pagar ahora</Text>
+              <Text style={styles.altBtnText}>Jetzt bezahlen</Text>
             </Pressable>
           )}
 
           <Pressable testID="back-home-btn" onPress={() => router.replace("/")} style={styles.altBtnGhost}>
-            <Text style={styles.altBtnGhostText}>Volver al inicio</Text>
+            <Text style={styles.altBtnGhostText}>Zurück zur Startseite</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -146,46 +146,21 @@ const styles = StyleSheet.create({
   title: { fontSize: typography.sizes.xxl, fontWeight: "800", color: colors.onSurface, textAlign: "center" },
   subtitle: { fontSize: typography.sizes.base, color: colors.onSurfaceTertiary, textAlign: "center", marginTop: spacing.sm, marginBottom: spacing.xl },
 
-  card: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   rowH: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.brandTertiary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  iconBox: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.brandTertiary, alignItems: "center", justifyContent: "center" },
   rowSmall: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary },
   rowBig: { fontSize: typography.sizes.base, color: colors.onSurface, fontWeight: "600", marginTop: 2 },
   priceTxt: { fontSize: typography.sizes.xl, fontWeight: "800", color: colors.brandPrimary },
   dividerRow: { height: 1, backgroundColor: colors.divider, marginVertical: spacing.md },
 
   mapsBtn: {
-    backgroundColor: colors.brandPrimary,
-    paddingVertical: 14,
-    borderRadius: radius.pill,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
+    backgroundColor: colors.brandPrimary, paddingVertical: 14, borderRadius: radius.pill,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: spacing.sm, marginTop: spacing.lg,
   },
   mapsText: { color: colors.onBrandPrimary, fontSize: typography.sizes.base, fontWeight: "700" },
 
-  altBtn: {
-    marginTop: spacing.md,
-    backgroundColor: colors.brandSecondary,
-    paddingVertical: 14,
-    borderRadius: radius.pill,
-    alignItems: "center",
-  },
+  altBtn: { marginTop: spacing.md, backgroundColor: colors.brandSecondary, paddingVertical: 14, borderRadius: radius.pill, alignItems: "center" },
   altBtnText: { color: colors.onBrandSecondary, fontWeight: "700", fontSize: typography.sizes.base },
   altBtnGhost: { marginTop: spacing.md, paddingVertical: 14, alignItems: "center" },
   altBtnGhostText: { color: colors.onSurfaceTertiary, fontSize: typography.sizes.base, fontWeight: "600" },

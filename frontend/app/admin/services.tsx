@@ -77,7 +77,7 @@ export default function AdminServices() {
         active: form.active,
       };
       if (!payload.name || !payload.description || Number.isNaN(payload.price)) {
-        throw new Error("Completa todos los campos requeridos");
+        throw new Error("Bitte alle Pflichtfelder ausfüllen");
       }
       if (form.id) await api.updateService(form.id, payload);
       else await api.createService(payload);
@@ -86,7 +86,7 @@ export default function AdminServices() {
       setLoading(true);
       load();
     } catch (e: any) {
-      setError(e.message || "Error al guardar");
+      setError(e.message || "Fehler beim Speichern");
     } finally {
       setSaving(false);
     }
@@ -105,7 +105,7 @@ export default function AdminServices() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.headerBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Servicios y precios</Text>
+        <Text style={styles.headerTitle}>Services und Preise</Text>
         <Pressable testID="add-service-btn" onPress={newItem} style={[styles.headerBtn, { backgroundColor: colors.brandPrimary }]}>
           <Ionicons name="add" size={22} color={colors.onBrandPrimary} />
         </Pressable>
@@ -118,7 +118,7 @@ export default function AdminServices() {
           {items.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="pricetags-outline" size={40} color={colors.brandPrimary} />
-              <Text style={styles.emptyTxt}>No hay servicios. Agrega el primero.</Text>
+              <Text style={styles.emptyTxt}>Keine Services. Fügen Sie den ersten hinzu.</Text>
             </View>
           ) : items.map((s) => (
             <View key={s.id} testID={`svc-${s.id}`} style={styles.card}>
@@ -128,23 +128,23 @@ export default function AdminServices() {
                   <Text style={styles.cardName}>{s.name}</Text>
                   {!s.active && (
                     <View style={styles.inactive}>
-                      <Text style={styles.inactiveTxt}>Inactivo</Text>
+                      <Text style={styles.inactiveTxt}>Inaktiv</Text>
                     </View>
                   )}
                 </View>
                 <Text style={styles.cardDesc} numberOfLines={2}>{s.description}</Text>
                 <View style={{ flexDirection: "row", gap: spacing.md, marginTop: 4 }}>
                   <Text style={styles.cardPrice}>€{s.price.toFixed(0)}</Text>
-                  <Text style={styles.cardMeta}>{s.duration_minutes} min</Text>
+                  <Text style={styles.cardMeta}>{s.duration_minutes} Min.</Text>
                 </View>
                 <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
                   <Pressable testID={`edit-${s.id}`} onPress={() => edit(s)} style={styles.smallBtn}>
                     <Ionicons name="create-outline" size={14} color={colors.onBrandSecondary} />
-                    <Text style={styles.smallBtnTxt}>Editar</Text>
+                    <Text style={styles.smallBtnTxt}>Bearbeiten</Text>
                   </Pressable>
                   <Pressable testID={`del-${s.id}`} onPress={() => remove(s.id)} style={[styles.smallBtn, { backgroundColor: "#FFE3E1" }]}>
                     <Ionicons name="trash-outline" size={14} color={colors.error} />
-                    <Text style={[styles.smallBtnTxt, { color: colors.error }]}>Eliminar</Text>
+                    <Text style={[styles.smallBtnTxt, { color: colors.error }]}>Löschen</Text>
                   </Pressable>
                 </View>
               </View>
@@ -158,30 +158,30 @@ export default function AdminServices() {
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
             <View style={styles.handle} />
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <Text style={styles.sheetTitle}>{form.id ? "Editar servicio" : "Nuevo servicio"}</Text>
+              <Text style={styles.sheetTitle}>{form.id ? "Service bearbeiten" : "Neuer Service"}</Text>
 
-              <Text style={styles.inputLabel}>Nombre</Text>
+              <Text style={styles.inputLabel}>Name</Text>
               <TextInput
                 testID="form-name"
                 value={form.name}
                 onChangeText={(v) => setForm({ ...form, name: v })}
-                placeholder="Ej. Limpieza Express"
+                placeholder="z.B. Express-Reinigung"
                 placeholderTextColor={colors.info}
                 style={styles.input}
               />
-              <Text style={styles.inputLabel}>Descripción</Text>
+              <Text style={styles.inputLabel}>Beschreibung</Text>
               <TextInput
                 testID="form-desc"
                 value={form.description}
                 onChangeText={(v) => setForm({ ...form, description: v })}
-                placeholder="Detalle de lo que incluye"
+                placeholder="Was ist enthalten"
                 placeholderTextColor={colors.info}
                 style={[styles.input, { height: 80 }]}
                 multiline
               />
               <View style={{ flexDirection: "row", gap: spacing.md }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Precio (EUR)</Text>
+                  <Text style={styles.inputLabel}>Preis (EUR)</Text>
                   <TextInput
                     testID="form-price"
                     value={form.price}
@@ -193,7 +193,7 @@ export default function AdminServices() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Duración (min)</Text>
+                  <Text style={styles.inputLabel}>Dauer (Min.)</Text>
                   <TextInput
                     testID="form-duration"
                     value={form.duration_minutes}
@@ -205,7 +205,7 @@ export default function AdminServices() {
                   />
                 </View>
               </View>
-              <Text style={styles.inputLabel}>Imagen (URL)</Text>
+              <Text style={styles.inputLabel}>Bild-URL</Text>
               <TextInput
                 testID="form-image"
                 value={form.image_url}
@@ -221,16 +221,16 @@ export default function AdminServices() {
                 style={[styles.toggle, form.active && styles.toggleOn]}
               >
                 <Ionicons name={form.active ? "checkmark-circle" : "close-circle"} size={18} color={form.active ? colors.brandPrimary : colors.info} />
-                <Text style={styles.toggleTxt}>{form.active ? "Activo (visible para clientes)" : "Inactivo"}</Text>
+                <Text style={styles.toggleTxt}>{form.active ? "Aktiv (für Kunden sichtbar)" : "Inaktiv"}</Text>
               </Pressable>
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <Pressable testID="form-save-btn" onPress={save} disabled={saving} style={[styles.saveBtn, saving && { opacity: 0.6 }]}>
-                {saving ? <ActivityIndicator color={colors.onBrandPrimary} /> : <Text style={styles.saveBtnTxt}>Guardar</Text>}
+                {saving ? <ActivityIndicator color={colors.onBrandPrimary} /> : <Text style={styles.saveBtnTxt}>Speichern</Text>}
               </Pressable>
               <Pressable testID="form-cancel-btn" onPress={() => setShowForm(false)} style={styles.cancelBtn}>
-                <Text style={styles.cancelBtnTxt}>Cancelar</Text>
+                <Text style={styles.cancelBtnTxt}>Abbrechen</Text>
               </Pressable>
             </ScrollView>
           </View>
