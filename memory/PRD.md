@@ -1,44 +1,42 @@
-# LimpiaHogar — Product Requirements Document
+# Cleaning Service Wels — PRD
 
-## Overview
-Mobile app (Expo React Native) for a house cleaning business. Customers schedule and pay online (before service). Owner/staff sees all bookings in an admin panel with route/map integration.
+Mobile + Web app (Expo React Native) for Dennisse Nava Porras — Reinigungs- + Kinderbetreuungsservice in Wels, Österreich.
 
 ## Users
-- **Customer**: no login. Uses device_id (AsyncStorage) to track their own bookings.
-- **Admin**: single seeded account (`admin@limpia.com` / `admin123`), JWT-authenticated.
+- **Customer**: no login (device_id via AsyncStorage). Language: German.
+- **Admin (Dennisse)**: single account `admin@limpia.com / admin123`, JWT-authenticated.
 
-## Core Flows
-1. **Customer books**
-   - Selects service (horizontal cards)
-   - Picks date (next 14 days) & time slot
-   - Enters name, phone, full address, optional notes
-   - Continues to Checkout
-2. **Payment (MOCK)** — simulates Stripe checkout with card form. Validates card, holder, expiry, CVC. Marks booking as `paid`.
-3. **Confirmation** — shows booking details + "Ver ruta en mapas" (opens Apple/Google Maps via deep-link with address).
-4. **My bookings** — list of the customer's bookings by device_id. Shows status; pending payments can be resumed.
-5. **Admin login** — email/password → JWT stored in SecureStore.
-6. **Admin agenda** — daily strip + list, or "Ver todas". Stats: today, total, revenue. Each card: name, phone, service, time, address, status. Actions: Ver ruta, Llamar, Confirm → In progress → Complete, Cancel.
-7. **Admin services management** — CRUD on services (name, description, price, duration, image, active).
+## Availability
+- Mo–So · 14:00–19:00 Uhr (letzte Buchung 19:00). Reflected on Home hero, /book banner + time slots (`["14:00","15:00","16:00","17:00","18:00","19:00"]`), /info badge + Verfügbarkeit section.
 
-## Data model (MongoDB)
-- `services`: id, name, description, price, duration_minutes, image_url, active, created_at
-- `bookings`: id, device_id, customer_name, customer_phone, service_id, service_name, service_price, address, scheduled_date, scheduled_time, notes, status (`pending_payment`/`paid`/`confirmed`/`in_progress`/`completed`/`cancelled`), payment_ref, paid_at, created_at
-- `admins`: email, password_hash (bcrypt), created_at
+## Services (seeded in EUR, German)
+- Basis-Paket €66 (3 Std.)
+- Familien-Paket €112,50 (4–5 Std.)
+- Premium-Paket €120 (5 Std./Tag)
+- VIP-Monatspaket €2.000 (20 Std./Woche)
 
-## API (all under `/api`)
-Public: `GET /services`, `POST /bookings`, `POST /bookings/{id}/pay`, `GET /bookings/{id}`, `GET /bookings/customer/{device_id}`
-Admin (Bearer JWT): `POST /admin/login`, `GET /admin/bookings?date=&status=`, `GET /admin/stats`, `PATCH /admin/bookings/{id}/status`, `GET/POST /admin/services`, `PATCH/DELETE /admin/services/{id}`
+## Flows
+1. Customer: Home → Book (pack, day, time, name/phone/address) → Checkout (MOCK Stripe card form) → Success + Route (Apple/Google Maps deep-link) → My-Bookings.
+2. Admin: /admin/login → Terminkalender (stats Heute/Gesamt/Umsatz, day strip, list) → Booking modal (Route in Maps, Bestätigen → Starten → Abschließen, Stornieren) → Services CRUD (/admin/services).
+3. Landing/Info (/info): Über mich, Angebot (Reinigung + Kinderbetreuung), Verfügbarkeit, 4 Pakete, 4 Angebote mit Codes (**WILLKOMMEN10, KUEHL40, FREUNDIN2H, MONAT5**), Zahlungsmethoden, Servicegebiet (Wels + Gemeinden), Kundenbewertungen, Vertrauen & Sicherheit, Kontakt (WhatsApp +43 664 101 9869, denissenavaporras@gmail.com).
+
+## Backend
+- FastAPI + MongoDB. All routes under `/api`. JWT (pyjwt) + bcrypt for admin.
+- Endpoints: services (public GET, admin CRUD), bookings (public create/get/list-by-device, MOCK pay), admin (login, bookings query, stats, status update).
 
 ## Integrations
-- **Stripe**: MOCKED for demo (no real Stripe SDK / native module). Card form validates locally; backend accepts and marks booking as paid. To go live: swap `/bookings/{id}/pay` to Stripe PaymentIntent + Stripe Elements/PaymentSheet.
-- **Maps**: `Linking` deep link — iOS Apple Maps (`maps.apple.com`), Android `geo:`, web fallback Google Maps search.
-- **Auth**: JWT (pyjwt) with bcrypt passwords for admin only.
+- Stripe: **MOCKED** — accepts `4242…` (success) / `4000…0002` (declined). Real Stripe swap: replace `POST /api/bookings/{id}/pay` with PaymentIntent + Stripe Elements/PaymentSheet.
+- Maps: `Linking` deep-link (Apple Maps / geo: / Google Maps fallback).
+- Auth: JWT admin only. Customer uses AsyncStorage device_id.
 
 ## Design
-Based on `/app/design_guidelines.json` — "iOS-Native Clean" personality, Sage/Moss green palette, generous spacing, sticky bottom CTAs, glass-free surfaces, Ionicons.
+`/app/design_guidelines.json` — iOS-Native Clean, Sage/Moss green palette. Generous spacing, sticky bottom CTAs, Ionicons.
+
+## Localization
+Full German UI (screens, seeded data, dates `toLocaleDateString("de-DE", …)`).
 
 ## Non-goals (MVP)
 - Push notifications
-- Real payment integration
-- Google-Maps embedded map (uses deep-linking instead)
-- Multi-language (Spanish only)
+- Real Stripe integration
+- Discount code redemption logic (codes are displayed as marketing badges only)
+- Google-Maps embedded map (uses deep-link)
