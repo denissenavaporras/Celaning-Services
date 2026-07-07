@@ -5,7 +5,7 @@ import pytest
 import requests
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://cleanroute-app-2.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("EXPO_BACKEND_URL", os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://cleanroute-app-2.preview.emergentagent.com")).rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@limpia.com"
@@ -80,7 +80,16 @@ class TestBookingsAndPayment:
             "scheduled_date": tomorrow,
             "scheduled_time": "10:00",
             "notes": "TEST booking",
+            "consent_accepted": True,
         }
+
+    def test_create_booking_requires_consent(self, session, service_id):
+        # Iteration 4: consent_accepted=False should return 400
+        payload = self._make_booking_payload(service_id)
+        payload["consent_accepted"] = False
+        r = session.post(f"{API}/bookings", json=payload)
+        assert r.status_code == 400, r.text
+        assert "Datenschutz-Einwilligung ist erforderlich" in r.json().get("detail", "")
 
     def test_create_booking_pending_payment(self, session, service_id):
         payload = self._make_booking_payload(service_id)
@@ -90,6 +99,8 @@ class TestBookingsAndPayment:
         assert data["status"] == "pending_payment"
         assert data["service_id"] == service_id
         assert data["customer_name"] == "TEST User"
+        assert data["consent_accepted"] is True
+        assert data.get("consent_at") is not None
         assert "id" in data
         TestBookingsAndPayment.created_ids.append(data["id"])
 
@@ -97,7 +108,9 @@ class TestBookingsAndPayment:
         booking_id = TestBookingsAndPayment.created_ids[0]
         r = session.get(f"{API}/bookings/{booking_id}")
         assert r.status_code == 200
-        assert r.json()["id"] == booking_id
+        body = r.json()
+        assert body["id"] == booking_id
+        assert body["consent_accepted"] is True
 
     def test_get_customer_bookings(self, session):
         r = session.get(f"{API}/bookings/customer/{self.device_id}")

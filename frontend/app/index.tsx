@@ -195,6 +195,26 @@ export default function Home() {
             </View>
           </View>
         </View>
+
+        {/* Legal footer */}
+        <View style={styles.section}>
+          <Pressable
+            testID="home-faq-link"
+            onPress={() => router.push("/faq")}
+            style={styles.footerLink}
+          >
+            <Ionicons name="help-circle-outline" size={16} color={colors.onSurfaceTertiary} />
+            <Text style={styles.footerLinkText}>Häufige Fragen (FAQ)</Text>
+          </Pressable>
+          <Pressable
+            testID="home-privacy-link"
+            onPress={() => router.push("/privacy")}
+            style={styles.footerLink}
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.onSurfaceTertiary} />
+            <Text style={styles.footerLinkText}>Datenschutzerklärung (DSGVO)</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* Sticky bottom CTA */}
@@ -328,6 +348,12 @@ const styles = StyleSheet.create({
   aboutName: { fontSize: typography.sizes.lg, fontWeight: "800", color: colors.onBrandTertiary },
   aboutBody: { fontSize: typography.sizes.sm, color: colors.onBrandTertiary, marginTop: 4, lineHeight: 18 },
   aboutLink: { fontSize: typography.sizes.sm, fontWeight: "700", color: colors.brandPrimary, marginTop: spacing.sm },
+
+  footerLink: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: spacing.sm, paddingVertical: spacing.md,
+  },
+  footerLinkText: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, fontWeight: "600" },
 
   bottomBar: {
     position: "absolute",

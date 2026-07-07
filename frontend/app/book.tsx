@@ -51,6 +51,7 @@ export default function BookScreen() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
 
   const days = useMemo(() => getNextDays(14), []);
@@ -66,7 +67,7 @@ export default function BookScreen() {
   }, []);
 
   const canContinue =
-    !!selectedService && !!selectedDate && !!selectedTime && name.trim().length > 1 && phone.trim().length >= 7 && address.trim().length > 4;
+    !!selectedService && !!selectedDate && !!selectedTime && name.trim().length > 1 && phone.trim().length >= 7 && address.trim().length > 4 && consent;
 
   async function onSubmit() {
     if (!canContinue || !selectedService) return;
@@ -84,6 +85,7 @@ export default function BookScreen() {
         scheduled_date: selectedDate,
         scheduled_time: selectedTime,
         notes: notes.trim() || undefined,
+        consent_accepted: consent,
       });
       router.replace({ pathname: "/checkout", params: { id: booking.id } });
     } catch (e: any) {
@@ -258,6 +260,33 @@ export default function BookScreen() {
             />
           </View>
 
+          {/* Consent checkbox */}
+          <Pressable
+            testID="consent-checkbox"
+            onPress={() => setConsent((v) => !v)}
+            style={[styles.consentBox, consent && styles.consentBoxOn]}
+          >
+            <View style={[styles.checkbox, consent && styles.checkboxOn]}>
+              {consent && <Ionicons name="checkmark" size={16} color={colors.onBrandPrimary} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.consentText}>
+                Ich stimme zu, dass meine personenbezogenen Daten (Name, Adresse, Telefonnummer, E-Mail) zum Zweck
+                der Terminvereinbarung und Durchführung der Dienstleistungen (Haushaltsreinigung und Kinderbetreuung)
+                verarbeitet werden. Mir ist bekannt, dass ich meine Einwilligung jederzeit widerrufen kann. Die
+                vollständige Datenschutzerklärung habe ich zur Kenntnis genommen.
+              </Text>
+              <Pressable
+                testID="open-privacy-link"
+                onPress={(e) => { e.stopPropagation?.(); router.push("/privacy"); }}
+                style={styles.consentLink}
+              >
+                <Ionicons name="shield-checkmark" size={14} color={colors.brandPrimary} />
+                <Text style={styles.consentLinkText}>Datenschutzerklärung öffnen</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
@@ -383,6 +412,32 @@ const styles = StyleSheet.create({
   },
 
   errorText: { color: colors.error, fontSize: typography.sizes.sm, marginTop: spacing.md, textAlign: "center" },
+
+  consentBox: {
+    marginTop: spacing.lg,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  consentBoxOn: { borderColor: colors.brandPrimary, backgroundColor: colors.brandTertiary },
+  checkbox: {
+    width: 24, height: 24, borderRadius: 6,
+    borderWidth: 2, borderColor: colors.borderStrong,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.surfaceSecondary,
+    marginTop: 2,
+  },
+  checkboxOn: { backgroundColor: colors.brandPrimary, borderColor: colors.brandPrimary },
+  consentText: {
+    fontSize: typography.sizes.sm, color: colors.onSurfaceSecondary, lineHeight: 18,
+  },
+  consentLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.sm },
+  consentLinkText: { fontSize: typography.sizes.sm, fontWeight: "700", color: colors.brandPrimary },
 
   stickyBar: {
     backgroundColor: colors.surfaceSecondary,

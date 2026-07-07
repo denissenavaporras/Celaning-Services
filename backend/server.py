@@ -76,6 +76,8 @@ class BookingCreate(BaseModel):
     scheduled_date: str  # YYYY-MM-DD
     scheduled_time: str  # HH:MM
     notes: Optional[str] = None
+    customer_email: Optional[str] = None
+    consent_accepted: bool = False
 
 
 class Booking(BaseModel):
@@ -83,6 +85,7 @@ class Booking(BaseModel):
     device_id: str
     customer_name: str
     customer_phone: str
+    customer_email: Optional[str] = None
     service_id: str
     service_name: str
     service_price: float
@@ -97,6 +100,8 @@ class Booking(BaseModel):
     payment_method: Optional[str] = None
     payment_ref: Optional[str] = None
     paid_at: Optional[datetime] = None
+    consent_accepted: bool = False
+    consent_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -237,11 +242,14 @@ async def create_booking(payload: BookingCreate):
     svc = await db.services.find_one({"id": payload.service_id}, {"_id": 0})
     if not svc:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    if not payload.consent_accepted:
+        raise HTTPException(status_code=400, detail="Datenschutz-Einwilligung ist erforderlich")
 
     booking = Booking(
         device_id=payload.device_id,
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
+        customer_email=payload.customer_email,
         service_id=payload.service_id,
         service_name=svc["name"],
         service_price=svc["price"],
@@ -252,6 +260,8 @@ async def create_booking(payload: BookingCreate):
         scheduled_date=payload.scheduled_date,
         scheduled_time=payload.scheduled_time,
         notes=payload.notes,
+        consent_accepted=True,
+        consent_at=datetime.now(timezone.utc),
     )
     await db.bookings.insert_one(booking.dict())
     return booking

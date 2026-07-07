@@ -303,6 +303,28 @@ export default function Info() {
           </Pressable>
           <Text style={styles.contactHelper}>Unverbindliche Anfragen jederzeit willkommen.</Text>
         </View>
+
+        {/* Legal footer */}
+        <View style={styles.section}>
+          <Pressable
+            testID="faq-link"
+            onPress={() => router.push("/faq")}
+            style={[styles.privacyLink, { marginBottom: spacing.sm }]}
+          >
+            <Ionicons name="help-circle" size={18} color={colors.brandPrimary} />
+            <Text style={styles.privacyLinkText}>Häufige Fragen (FAQ)</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceTertiary} />
+          </Pressable>
+          <Pressable
+            testID="privacy-link"
+            onPress={() => router.push("/privacy")}
+            style={styles.privacyLink}
+          >
+            <Ionicons name="shield-checkmark" size={18} color={colors.brandPrimary} />
+            <Text style={styles.privacyLinkText}>Datenschutzerklärung ansehen</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceTertiary} />
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* Sticky CTA */}
@@ -420,6 +442,14 @@ const styles = StyleSheet.create({
   contactLabel: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, fontWeight: "600" },
   contactValue: { fontSize: typography.sizes.base, color: colors.onSurface, fontWeight: "700", marginTop: 2 },
   contactHelper: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary, marginTop: spacing.sm, textAlign: "center" },
+
+  privacyLink: {
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+  },
+  privacyLinkText: { flex: 1, fontSize: typography.sizes.base, fontWeight: "700", color: colors.onSurface },
 
   bottomBar: {
     position: "absolute", left: 0, right: 0, bottom: 0,
