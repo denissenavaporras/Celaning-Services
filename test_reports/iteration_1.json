@@ -1,0 +1,40 @@
+{
+  "summary": "Backend (19/19 pytest) and Frontend (customer + admin) flows all pass on https://cleanroute-app-2.preview.emergentagent.com. Backend: services returns 4 Wels packs in EUR (66/112.5/120/2000), booking create → pay (4242 success / 4000-...-0002 → 402) → paid status, GET by id and by device_id all work; admin JWT login, protected endpoints (401 without / 200 with token), stats, status transitions, and services CRUD all pass. Frontend mobile viewport: Home → Book (4 services, 14 days, 10 time slots, form) → Checkout with EUR summary → Pay 4242 → Success page with 'Ver ruta' → My bookings shows the created booking with 'Pagado' badge. Admin login → Panel de agenda with stats (Hoy/Total/Ingresos €132) → Services page lists 4 packs, add/edit/delete UI verified. Minor: home shows 'Cleaning ServiceS Wels' (plural) which differs from spec 'Cleaning Service Wels'. Info page renders but the pack names section is below the fold on the initial viewport. React Native console shows only 'shadow* deprecated, use boxShadow' warnings (react-native-web migration warning, non-blocking).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/", "issues": ["Brand text renders as 'Cleaning Services Wels' (plural 'Services') but spec/PRD says 'Cleaning Service Wels' (singular). Reference: /app/frontend/app/index.tsx around the header title."]}
+    ],
+    "react_native_issues": [
+      {"component": "StyleSheet.shadow*", "issue": "react-native-web logs repeated deprecation warnings: 'shadow*' style props are deprecated. Use 'boxShadow'. Non-blocking but should be migrated. Reference: search for shadowColor/shadowOffset/shadowOpacity/shadowRadius across /app/frontend/app/*.tsx and card style files."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Decide branding: fix 'Cleaning Services Wels' → 'Cleaning Service Wels' (singular) in /app/frontend/app/index.tsx if spec must be followed exactly; otherwise update PRD.",
+    "Migrate shadow* style props to boxShadow (or add web-specific style) to remove deprecation warnings.",
+    "Optional: add testID to admin agenda booking cards (e.g. `booking-card-<id>`) — currently no card-level testID so tests must fall back to inner buttons (Ver ruta / Llamar).",
+    "Optional cleanup: delete any leftover 'TEST_*' service the automated tests may have created (test_backend.py cleans its own; UI test added 'TEST_UI Pack' — cleanup via admin panel or DELETE /api/admin/services/{id})."
+  ],
+  "critical_code_review_comments": [
+    "server.py cleanly uses UUIDs, excludes _id via projection, uses env vars, proper async/await, and Bearer JWT with 7-day expiry — no critical issues.",
+    "Payment endpoint is MOCKED and clearly identified (payment_ref prefixed 'MOCK-', logic simulates decline for 4000-...-0002) — behaves as specified."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend.py (new)"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% for core customer + admin flows tested"},
+  "seed_data_creation": "test_backend.py creates two TEST_ bookings (device_id TEST_device_*) and one TEST_Extra Pack service which it deletes at the end. UI test created one 'TEST_UI Pack' service and one TEST User booking in the DB that were not cleaned up.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend base: https://cleanroute-app-2.preview.emergentagent.com/api. Admin: admin@limpia.com/admin123. Success card 4242 4242 4242 4242, decline 4000 0000 0000 0002 → 402. Booking lifecycle: pending_payment → paid → confirmed → in_progress → completed | cancelled. Customer identity via device_id (AsyncStorage on frontend). Frontend uses process.env.EXPO_PUBLIC_BACKEND_URL. All screens have testIDs for interactive elements; agenda cards lack a card-level testID but modals expose modal-route-btn / modal-next-status-btn / modal-cancel-btn / modal-close-btn. Info page needs scroll to see all sections.",
+  "rca_of_issue": "No functional bugs found. Only branding discrepancy ('Cleaning Services Wels' vs 'Cleaning Service Wels') and react-native-web shadow* deprecation warnings."
+}
