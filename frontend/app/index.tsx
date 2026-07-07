@@ -88,7 +88,7 @@ export default function Home() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.heroBrand}>Cleaning Services Wels</Text>
+                  <Text style={styles.heroBrand}>Cleaning Service Wels</Text>
                   <Text style={styles.heroSubtitle}>Limpieza + Cuidado infantil · Dennisse Nava</Text>
                 </View>
               </View>

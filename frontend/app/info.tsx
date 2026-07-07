@@ -254,25 +254,25 @@ export default function Info() {
           <Text style={styles.h1}>📞 Contacto</Text>
           <Pressable
             testID="whatsapp-btn"
-            onPress={() => Linking.openURL("https://wa.me/")}
+            onPress={() => Linking.openURL("https://wa.me/436641019869")}
             style={[styles.contactRow, { backgroundColor: "#DFF6E3" }]}
           >
             <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
             <View style={{ flex: 1 }}>
               <Text style={styles.contactLabel}>WhatsApp / Teléfono</Text>
-              <Text style={styles.contactValue}>Pendiente por configurar</Text>
+              <Text style={styles.contactValue}>+43 664 101 9869</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
           </Pressable>
           <Pressable
             testID="email-btn"
-            onPress={() => Linking.openURL("mailto:")}
+            onPress={() => Linking.openURL("mailto:denissenavaporras@gmail.com")}
             style={styles.contactRow}
           >
             <Ionicons name="mail" size={22} color={colors.brandPrimary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>Pendiente por configurar</Text>
+              <Text style={styles.contactValue}>denissenavaporras@gmail.com</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
           </Pressable>
