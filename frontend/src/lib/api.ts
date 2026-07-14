@@ -32,6 +32,9 @@ export type Booking = {
   payment_ref?: string;
   paid_at?: string | null;
   created_at: string;
+  discount_code?: string | null;
+  discount_amount?: number;
+  final_price?: number;
 };
 
 async function jsonReq<T>(path: string, opts: RequestInit = {}, auth = false): Promise<T> {
@@ -67,6 +70,11 @@ export const api = {
   getBooking: (id: string) => jsonReq<Booking>(`/bookings/${id}`),
   customerBookings: (deviceId: string) =>
     jsonReq<Booking[]>(`/bookings/customer/${encodeURIComponent(deviceId)}`),
+  validateDiscount: (code: string, price: number) =>
+    jsonReq<{ code: string; type: string; value: number; description: string; discount_amount: number; final_price: number }>(
+      "/discount/validate",
+      { method: "POST", body: JSON.stringify({ code, price }) },
+    ),
 
   // admin
   adminLogin: (email: string, password: string) =>

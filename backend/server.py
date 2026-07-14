@@ -78,6 +78,7 @@ class BookingCreate(BaseModel):
     notes: Optional[str] = None
     customer_email: Optional[str] = None
     consent_accepted: bool = False
+    discount_code: Optional[str] = None
 
 
 class Booking(BaseModel):
@@ -102,7 +103,35 @@ class Booking(BaseModel):
     paid_at: Optional[datetime] = None
     consent_accepted: bool = False
     consent_at: Optional[datetime] = None
+    discount_code: Optional[str] = None
+    discount_amount: float = 0.0
+    final_price: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+DISCOUNT_CODES: dict = {
+    "WILLKOMMEN10": {"type": "percent", "value": 10, "description": "10 % Rabatt für Neukunden"},
+    "MONAT5": {"type": "percent", "value": 5, "description": "5 % Rabatt bei Vorauszahlung"},
+    "FREUNDIN2H": {"type": "fixed", "value": 50, "description": "Empfehlungsbonus – 50 € geschenkt"},
+    "KUEHL40": {"type": "fixed", "value": 40, "description": "Kühlschrankreinigung gratis (40 €)"},
+}
+
+
+def apply_discount(code: Optional[str], price: float) -> tuple[str, float, float]:
+    """Return (normalized_code_or_empty, discount_amount, final_price)."""
+    if not code:
+        return "", 0.0, price
+    normalized = code.strip().upper()
+    rule = DISCOUNT_CODES.get(normalized)
+    if not rule:
+        raise HTTPException(status_code=400, detail="Ungültiger Rabattcode")
+    if rule["type"] == "percent":
+        amount = round(price * rule["value"] / 100.0, 2)
+    else:
+        amount = float(rule["value"])
+    amount = min(amount, price)
+    final = round(price - amount, 2)
+    return normalized, amount, final
 
 
 class PayRequest(BaseModel):
@@ -237,6 +266,72 @@ async def list_services(only_active: bool = True):
     return docs
 
 
+@api.post("/discount/validate")
+async def validate_discount(payload: dict):
+    code = (payload or {}).get("code") or ""
+    price = float((payload or {}).get("price") or 0)
+    if not code.strip():
+        raise HTTPException(status_code=400, detail="Kein Code angegeben")
+    normalized, amount, final = apply_discount(code, price)
+    rule = DISCOUNT_CODES[normalized]
+    return {
+        "code": normalized,
+        "type": rule["type"],
+        "value": rule["value"],
+        "description": rule["description"],
+        "discount_amount": amount,
+        "final_price": final,
+    }
+
+
+async def send_booking_notification(booking: dict):
+    """Fire-and-forget: notify Dennisse of new booking via SendGrid. Silently skips if not configured."""
+    api_key = os.environ.get("SENDGRID_API_KEY", "").strip()
+    sender = os.environ.get("SENDER_EMAIL", "").strip()
+    to_email = "denissenavaporras@gmail.com"
+    if not api_key or not sender:
+        logger.info("SendGrid not configured — skipping email notification")
+        return
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={booking['address'].replace(' ', '+')}"
+        discount_line = ""
+        if booking.get("discount_code"):
+            discount_line = f"<p><b>Rabatt:</b> {booking['discount_code']} (–€{booking.get('discount_amount', 0):.2f})</p>"
+
+        html = f"""
+        <div style="font-family: -apple-system, sans-serif; max-width: 560px;">
+          <h2 style="color:#5D7B1E;">Neue Buchung — Cleaning Service Wels</h2>
+          <p><b>Kunde:</b> {booking['customer_name']}<br/>
+             <b>Telefon:</b> <a href="tel:{booking['customer_phone']}">{booking['customer_phone']}</a></p>
+          <p><b>Service:</b> {booking['service_name']}<br/>
+             <b>Datum:</b> {booking['scheduled_date']} um {booking['scheduled_time']} Uhr</p>
+          <p><b>Adresse:</b> {booking['address']}<br/>
+             <a href="{maps_url}">Route in Google Maps öffnen</a></p>
+          {discount_line}
+          <p><b>Endpreis:</b> €{booking.get('final_price', booking['service_price']):.2f}</p>
+          <p><b>Status:</b> {booking['status']}</p>
+          <p><b>Notizen:</b> {booking.get('notes') or '—'}</p>
+          <hr/>
+          <p style="color:#636366; font-size:12px;">Buchungs-ID: {booking['id']}</p>
+        </div>
+        """
+
+        message = Mail(
+            from_email=sender,
+            to_emails=to_email,
+            subject=f"Neue Buchung: {booking['customer_name']} – {booking['scheduled_date']} {booking['scheduled_time']}",
+            html_content=html,
+        )
+        sg = SendGridAPIClient(api_key)
+        resp = sg.send(message)
+        logger.info("SendGrid notification sent, status=%s", resp.status_code)
+    except Exception as e:
+        logger.exception("Email notification failed: %s", e)
+
+
 @api.post("/bookings", response_model=Booking)
 async def create_booking(payload: BookingCreate):
     svc = await db.services.find_one({"id": payload.service_id}, {"_id": 0})
@@ -245,6 +340,9 @@ async def create_booking(payload: BookingCreate):
     if not payload.consent_accepted:
         raise HTTPException(status_code=400, detail="Datenschutz-Einwilligung ist erforderlich")
 
+    price = float(svc["price"])
+    code, discount_amount, final_price = apply_discount(payload.discount_code, price)
+
     booking = Booking(
         device_id=payload.device_id,
         customer_name=payload.customer_name,
@@ -252,7 +350,7 @@ async def create_booking(payload: BookingCreate):
         customer_email=payload.customer_email,
         service_id=payload.service_id,
         service_name=svc["name"],
-        service_price=svc["price"],
+        service_price=price,
         address=payload.address,
         address_notes=payload.address_notes,
         latitude=payload.latitude,
@@ -262,8 +360,15 @@ async def create_booking(payload: BookingCreate):
         notes=payload.notes,
         consent_accepted=True,
         consent_at=datetime.now(timezone.utc),
+        discount_code=code or None,
+        discount_amount=discount_amount,
+        final_price=final_price,
     )
     await db.bookings.insert_one(booking.dict())
+
+    # Fire-and-forget: notify Dennisse
+    asyncio.create_task(send_booking_notification(booking.dict()))
+
     return booking
 
 
@@ -350,7 +455,7 @@ async def admin_stats(_: str = Depends(verify_admin)):
     paid_count = await db.bookings.count_documents({"status": "paid"})
     revenue_agg = await db.bookings.aggregate([
         {"$match": {"status": {"$in": ["paid", "confirmed", "in_progress", "completed"]}}},
-        {"$group": {"_id": None, "total": {"$sum": "$service_price"}}},
+        {"$group": {"_id": None, "total": {"$sum": {"$ifNull": ["$final_price", "$service_price"]}}}},
     ]).to_list(1)
     revenue = revenue_agg[0]["total"] if revenue_agg else 0
     return {

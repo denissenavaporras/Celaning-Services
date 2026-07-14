@@ -119,10 +119,22 @@ export default function Checkout() {
                 {booking.address}
               </Text>
             </View>
+            {booking.discount_code ? (
+              <>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>Rabattcode</Text>
+                  <Text style={styles.rowValue}>{booking.discount_code}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>Rabatt</Text>
+                  <Text style={[styles.rowValue, { color: colors.brandPrimary }]}>–€{(booking.discount_amount || 0).toFixed(2)}</Text>
+                </View>
+              </>
+            ) : null}
             <View style={styles.divider} />
             <View style={styles.row}>
               <Text style={styles.totalLabel}>Gesamt</Text>
-              <Text style={styles.totalValue}>€{booking.service_price.toFixed(2)} EUR</Text>
+              <Text style={styles.totalValue}>€{(booking.final_price ?? booking.service_price).toFixed(2)} EUR</Text>
             </View>
           </View>
 
@@ -205,7 +217,7 @@ export default function Checkout() {
             ) : (
               <>
                 <Ionicons name="lock-closed" size={18} color={colors.onBrandPrimary} />
-                <Text style={styles.payBtnText}>€{booking.service_price.toFixed(0)} bezahlen & bestätigen</Text>
+                <Text style={styles.payBtnText}>€{(booking.final_price ?? booking.service_price).toFixed(0)} bezahlen & bestätigen</Text>
               </>
             )}
           </Pressable>

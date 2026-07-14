@@ -137,7 +137,7 @@ export default function Home() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.bookingTitle}>{b.service_name}</Text>
                     <Text style={styles.bookingMeta}>
-                      <Ionicons name="time-outline" size={12} /> {b.scheduled_time}  ·  €{b.service_price.toFixed(0)}
+                      <Ionicons name="time-outline" size={12} /> {b.scheduled_time}  ·  €{(b.final_price ?? b.service_price).toFixed(0)}
                     </Text>
                     <Text numberOfLines={1} style={styles.bookingAddr}>
                       <Ionicons name="location-outline" size={12} /> {b.address}

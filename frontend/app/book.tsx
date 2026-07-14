@@ -52,6 +52,10 @@ export default function BookScreen() {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [consent, setConsent] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountApplied, setDiscountApplied] = useState<null | { code: string; description: string; discount_amount: number; final_price: number }>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
+  const [discountError, setDiscountError] = useState("");
   const [error, setError] = useState("");
 
   const days = useMemo(() => getNextDays(14), []);
@@ -68,6 +72,33 @@ export default function BookScreen() {
 
   const canContinue =
     !!selectedService && !!selectedDate && !!selectedTime && name.trim().length > 1 && phone.trim().length >= 7 && address.trim().length > 4 && consent;
+
+  async function applyDiscount() {
+    if (!selectedService || !discountCode.trim()) return;
+    setDiscountLoading(true);
+    setDiscountError("");
+    try {
+      const r = await api.validateDiscount(discountCode.trim(), selectedService.price);
+      setDiscountApplied({ code: r.code, description: r.description, discount_amount: r.discount_amount, final_price: r.final_price });
+    } catch (e: any) {
+      setDiscountApplied(null);
+      setDiscountError(e.message || "Ungültiger Code");
+    } finally {
+      setDiscountLoading(false);
+    }
+  }
+
+  function clearDiscount() {
+    setDiscountApplied(null);
+    setDiscountCode("");
+    setDiscountError("");
+  }
+
+  // Reset discount when service changes (price recalculation needed)
+  useEffect(() => {
+    setDiscountApplied(null);
+    setDiscountError("");
+  }, [selectedService?.id]);
 
   async function onSubmit() {
     if (!canContinue || !selectedService) return;
@@ -86,6 +117,7 @@ export default function BookScreen() {
         scheduled_time: selectedTime,
         notes: notes.trim() || undefined,
         consent_accepted: consent,
+        discount_code: discountApplied?.code || undefined,
       });
       router.replace({ pathname: "/checkout", params: { id: booking.id } });
     } catch (e: any) {
@@ -260,6 +292,48 @@ export default function BookScreen() {
             />
           </View>
 
+          {/* Discount code */}
+          <View style={styles.discountBox}>
+            <Text style={styles.inputLabel}>Rabattcode (optional)</Text>
+            {discountApplied ? (
+              <View style={styles.discountApplied}>
+                <Ionicons name="pricetag" size={18} color={colors.brandPrimary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.discountAppliedTitle}>{discountApplied.code}</Text>
+                  <Text style={styles.discountAppliedDesc}>{discountApplied.description} · –€{discountApplied.discount_amount.toFixed(2)}</Text>
+                </View>
+                <Pressable testID="discount-clear" onPress={clearDiscount}>
+                  <Ionicons name="close-circle" size={20} color={colors.error} />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                <TextInput
+                  testID="discount-input"
+                  value={discountCode}
+                  onChangeText={(v) => setDiscountCode(v.toUpperCase())}
+                  placeholder="z.B. WILLKOMMEN10"
+                  placeholderTextColor={colors.info}
+                  autoCapitalize="characters"
+                  style={[styles.input, { flex: 1 }]}
+                />
+                <Pressable
+                  testID="discount-apply-btn"
+                  disabled={discountLoading || !discountCode.trim()}
+                  onPress={applyDiscount}
+                  style={[styles.discountBtn, (discountLoading || !discountCode.trim()) && { opacity: 0.5 }]}
+                >
+                  {discountLoading ? (
+                    <ActivityIndicator color={colors.onBrandPrimary} />
+                  ) : (
+                    <Text style={styles.discountBtnText}>Anwenden</Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+            {discountError ? <Text style={styles.discountErr}>{discountError}</Text> : null}
+          </View>
+
           {/* Consent checkbox */}
           <Pressable
             testID="consent-checkbox"
@@ -293,8 +367,15 @@ export default function BookScreen() {
         {/* Sticky CTA */}
         <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.stickySmall}>Geschätzter Gesamtpreis</Text>
-            <Text style={styles.stickyPrice}>€{selectedService ? selectedService.price.toFixed(0) : "0"}</Text>
+            <Text style={styles.stickySmall}>{discountApplied ? "Gesamt (inkl. Rabatt)" : "Geschätzter Gesamtpreis"}</Text>
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: spacing.sm }}>
+              {discountApplied && selectedService ? (
+                <Text style={styles.stickyStrike}>€{selectedService.price.toFixed(0)}</Text>
+              ) : null}
+              <Text style={styles.stickyPrice}>
+                €{discountApplied ? discountApplied.final_price.toFixed(0) : selectedService ? selectedService.price.toFixed(0) : "0"}
+              </Text>
+            </View>
           </View>
           <Pressable
             testID="continue-payment-btn"
@@ -439,6 +520,24 @@ const styles = StyleSheet.create({
   consentLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.sm },
   consentLinkText: { fontSize: typography.sizes.sm, fontWeight: "700", color: colors.brandPrimary },
 
+  discountBox: { marginTop: spacing.lg },
+  discountBtn: {
+    backgroundColor: colors.brandPrimary,
+    paddingHorizontal: spacing.lg,
+    justifyContent: "center",
+    borderRadius: radius.md,
+    minWidth: 100,
+  },
+  discountBtnText: { color: colors.onBrandPrimary, fontWeight: "700", fontSize: typography.sizes.base },
+  discountApplied: {
+    flexDirection: "row", alignItems: "center", gap: spacing.md,
+    backgroundColor: colors.brandTertiary, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.brandPrimary,
+  },
+  discountAppliedTitle: { fontSize: typography.sizes.base, fontWeight: "800", color: colors.brandPrimary, letterSpacing: 1 },
+  discountAppliedDesc: { fontSize: typography.sizes.sm, color: colors.onBrandTertiary, marginTop: 2 },
+  discountErr: { color: colors.error, fontSize: typography.sizes.sm, marginTop: 6 },
+
   stickyBar: {
     backgroundColor: colors.surfaceSecondary,
     borderTopWidth: 1,
@@ -451,6 +550,7 @@ const styles = StyleSheet.create({
   },
   stickySmall: { fontSize: typography.sizes.sm, color: colors.onSurfaceTertiary },
   stickyPrice: { fontSize: typography.sizes.xxl, fontWeight: "800", color: colors.onSurface },
+  stickyStrike: { fontSize: typography.sizes.base, color: colors.onSurfaceTertiary, textDecorationLine: "line-through" },
   continueBtn: {
     backgroundColor: colors.brandPrimary,
     paddingHorizontal: spacing.xl,

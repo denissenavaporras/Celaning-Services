@@ -64,7 +64,7 @@ export default function Success() {
                 <Text style={styles.rowSmall}>Service</Text>
                 <Text style={styles.rowBig}>{booking.service_name}</Text>
               </View>
-              <Text style={styles.priceTxt}>€{booking.service_price.toFixed(0)}</Text>
+              <Text style={styles.priceTxt}>€{(booking.final_price ?? booking.service_price).toFixed(0)}</Text>
             </View>
             <View style={styles.dividerRow} />
             <View style={styles.rowH}>

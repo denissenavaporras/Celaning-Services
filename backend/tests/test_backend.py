@@ -260,3 +260,171 @@ class TestAdminOperations:
         # verify deleted
         r = session.delete(f"{API}/admin/services/{sid}", headers=admin_headers)
         assert r.status_code == 404
+
+
+# ---------- Iteration 5: Discount codes + booking discount + revenue uses final_price ----------
+class TestDiscountValidation:
+    """POST /api/discount/validate — 4 valid codes + invalid + empty."""
+
+    def test_willkommen10_percent(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "WILLKOMMEN10", "price": 120})
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["code"] == "WILLKOMMEN10"
+        assert d["type"] == "percent"
+        assert d["value"] == 10
+        assert d["discount_amount"] == 12
+        assert d["final_price"] == 108
+
+    def test_freundin2h_fixed(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "FREUNDIN2H", "price": 120})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["type"] == "fixed"
+        assert d["discount_amount"] == 50
+        assert d["final_price"] == 70
+
+    def test_monat5_percent(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "MONAT5", "price": 100})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["discount_amount"] == 5
+        assert d["final_price"] == 95
+
+    def test_kuehl40_fixed(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "KUEHL40", "price": 120})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["discount_amount"] == 40
+        assert d["final_price"] == 80
+
+    def test_invalid_code(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "INVALID", "price": 120})
+        assert r.status_code == 400
+        assert "Ungültiger Rabattcode" in r.json().get("detail", "")
+
+    def test_empty_code(self, session):
+        r = session.post(f"{API}/discount/validate", json={"code": "", "price": 120})
+        assert r.status_code == 400
+        assert "Kein Code angegeben" in r.json().get("detail", "")
+
+    def test_lowercase_code_auto_uppercased(self, session):
+        # apply_discount normalizes to uppercase
+        r = session.post(f"{API}/discount/validate", json={"code": "willkommen10", "price": 120})
+        assert r.status_code == 200
+        assert r.json()["code"] == "WILLKOMMEN10"
+
+
+class TestBookingWithDiscount:
+    device_id = f"TEST_disc_{uuid.uuid4().hex[:8]}"
+    created_ids = []
+
+    @pytest.fixture(scope="class")
+    def premium_service(self, session):
+        r = session.get(f"{API}/services")
+        # Premium-Paket 120€ — deterministic math
+        for s in r.json():
+            if s["name"] == "Premium-Paket":
+                return s
+        return r.json()[0]
+
+    def _payload(self, service_id, discount_code=None):
+        tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+        p = {
+            "device_id": self.device_id,
+            "customer_name": "TEST Discount",
+            "customer_phone": "+43 660 9999999",
+            "service_id": service_id,
+            "address": "Wels, Test 5",
+            "scheduled_date": tomorrow,
+            "scheduled_time": "11:00",
+            "consent_accepted": True,
+        }
+        if discount_code is not None:
+            p["discount_code"] = discount_code
+        return p
+
+    def test_booking_with_willkommen10(self, session, premium_service):
+        r = session.post(f"{API}/bookings", json=self._payload(premium_service["id"], "WILLKOMMEN10"))
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["discount_code"] == "WILLKOMMEN10"
+        assert d["service_price"] == 120.0
+        assert d["discount_amount"] == 12.0
+        assert d["final_price"] == 108.0
+        TestBookingWithDiscount.created_ids.append(d["id"])
+
+        # Verify persistence via GET
+        r2 = session.get(f"{API}/bookings/{d['id']}")
+        assert r2.status_code == 200
+        got = r2.json()
+        assert got["discount_code"] == "WILLKOMMEN10"
+        assert got["final_price"] == 108.0
+
+    def test_booking_with_invalid_discount_rejected(self, session, premium_service):
+        r = session.post(f"{API}/bookings", json=self._payload(premium_service["id"], "BOGUS"))
+        assert r.status_code == 400
+        assert "Ungültiger Rabattcode" in r.json().get("detail", "")
+
+    def test_booking_without_discount_defaults(self, session, premium_service):
+        r = session.post(f"{API}/bookings", json=self._payload(premium_service["id"]))
+        assert r.status_code == 200
+        d = r.json()
+        # discount_code None; discount_amount 0; final_price == service_price
+        assert d.get("discount_code") in (None, "")
+        assert d["discount_amount"] == 0
+        assert d["final_price"] == d["service_price"]
+        TestBookingWithDiscount.created_ids.append(d["id"])
+
+    def test_booking_with_fixed_kuehl40(self, session, premium_service):
+        r = session.post(f"{API}/bookings", json=self._payload(premium_service["id"], "KUEHL40"))
+        assert r.status_code == 200
+        d = r.json()
+        assert d["discount_code"] == "KUEHL40"
+        assert d["discount_amount"] == 40.0
+        assert d["final_price"] == 80.0
+        TestBookingWithDiscount.created_ids.append(d["id"])
+
+    def test_sendgrid_skip_no_exception(self, session, premium_service):
+        """SENDGRID_API_KEY is unset — booking must still succeed (fire-and-forget skips silently)."""
+        r = session.post(f"{API}/bookings", json=self._payload(premium_service["id"], "MONAT5"))
+        assert r.status_code == 200
+        assert r.json()["discount_code"] == "MONAT5"
+
+
+class TestRevenueUsesFinalPrice:
+    def test_stats_revenue_reflects_final_price(self, session, admin_headers):
+        # Create booking with discount then pay it — revenue should include the discounted final_price
+        r = session.get(f"{API}/services")
+        premium = next((s for s in r.json() if s["name"] == "Premium-Paket"), r.json()[0])
+
+        tomorrow = (datetime.utcnow() + timedelta(days=2)).strftime("%Y-%m-%d")
+        payload = {
+            "device_id": f"TEST_rev_{uuid.uuid4().hex[:6]}",
+            "customer_name": "TEST Revenue",
+            "customer_phone": "+43 660 0000000",
+            "service_id": premium["id"],
+            "address": "Wels, Rev 1",
+            "scheduled_date": tomorrow,
+            "scheduled_time": "12:00",
+            "consent_accepted": True,
+            "discount_code": "WILLKOMMEN10",
+        }
+        r = session.post(f"{API}/bookings", json=payload)
+        assert r.status_code == 200
+        bid = r.json()["id"]
+        assert r.json()["final_price"] == 108.0
+
+        # snapshot revenue before payment
+        pre = session.get(f"{API}/admin/stats", headers=admin_headers).json()["revenue"]
+
+        pay = {"card_number": "4242 4242 4242 4242", "card_holder": "TEST Revenue", "exp": "12/28", "cvc": "123"}
+        r = session.post(f"{API}/bookings/{bid}/pay", json=pay)
+        assert r.status_code == 200
+        assert r.json()["status"] == "paid"
+
+        post = session.get(f"{API}/admin/stats", headers=admin_headers).json()["revenue"]
+        # Revenue should have increased by exactly the final_price (108), not the service_price (120)
+        delta = round(post - pre, 2)
+        assert abs(delta - 108.0) < 0.01, f"Expected revenue delta 108.0 (final_price), got {delta}"
+

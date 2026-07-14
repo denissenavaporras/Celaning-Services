@@ -204,7 +204,7 @@ export default function AdminAgenda() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardName}>{b.customer_name}</Text>
-                    <Text style={styles.cardMeta}>{b.service_name} · €{b.service_price.toFixed(0)}</Text>
+                    <Text style={styles.cardMeta}>{b.service_name} · €{(b.final_price ?? b.service_price).toFixed(0)}{b.discount_code ? `  🎁 ${b.discount_code}` : ""}</Text>
                     <Text style={styles.cardMeta} numberOfLines={1}>
                       <Ionicons name="call-outline" size={11} /> {b.customer_phone}
                     </Text>
@@ -272,7 +272,11 @@ export default function AdminAgenda() {
                 </View>
                 <View style={styles.detailRow}>
                   <Ionicons name="cash" size={18} color={colors.brandPrimary} />
-                  <Text style={styles.detailText}>€{selected.service_price.toFixed(2)} — {STATUS_META[selected.status]?.label}</Text>
+                  <Text style={styles.detailText}>
+                    {selected.discount_code
+                      ? `€${(selected.final_price ?? selected.service_price).toFixed(2)} (Rabatt ${selected.discount_code} –€${(selected.discount_amount || 0).toFixed(2)}) — ${STATUS_META[selected.status]?.label}`
+                      : `€${selected.service_price.toFixed(2)} — ${STATUS_META[selected.status]?.label}`}
+                  </Text>
                 </View>
 
                 <View style={{ height: spacing.lg }} />
@@ -280,6 +284,20 @@ export default function AdminAgenda() {
                 <Pressable testID="modal-route-btn" onPress={() => openMaps(selected.address)} style={styles.modalPrimary}>
                   <Ionicons name="navigate" size={18} color={colors.onBrandPrimary} />
                   <Text style={styles.modalPrimaryTxt}>Route in Maps öffnen</Text>
+                </Pressable>
+
+                <Pressable
+                  testID="modal-whatsapp-btn"
+                  onPress={() => {
+                    const phone = selected.customer_phone.replace(/[^0-9+]/g, "").replace(/^\+/, "");
+                    const dateStr = new Date(selected.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" });
+                    const msg = `Hallo ${selected.customer_name}, hier Dennisse vom Cleaning Service Wels. Ich bestätige Ihren Termin am ${dateStr} um ${selected.scheduled_time} Uhr für ${selected.service_name}. Bis bald! 😊`;
+                    Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
+                  }}
+                  style={styles.modalWhatsapp}
+                >
+                  <Ionicons name="logo-whatsapp" size={18} color="#fff" />
+                  <Text style={styles.modalWhatsappTxt}>WhatsApp senden</Text>
                 </Pressable>
 
                 {NEXT_STATUS[selected.status] && (
@@ -390,6 +408,11 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm,
   },
   modalPrimaryTxt: { color: colors.onBrandPrimary, fontWeight: "800", fontSize: typography.sizes.base },
+  modalWhatsapp: {
+    marginTop: spacing.sm, backgroundColor: "#25D366", paddingVertical: 14, borderRadius: radius.pill,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm,
+  },
+  modalWhatsappTxt: { color: "#fff", fontWeight: "800", fontSize: typography.sizes.base },
   modalSecondary: {
     backgroundColor: colors.brandSecondary, paddingVertical: 14, borderRadius: radius.pill,
     alignItems: "center", marginTop: spacing.sm,
