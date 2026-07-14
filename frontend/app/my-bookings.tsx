@@ -79,7 +79,7 @@ export default function MyBookings() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{b.service_name}</Text>
                     <Text style={styles.metaTxt}>
-                      {new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" })} · {b.scheduled_time} Uhr
+                      {new Date(b.scheduled_date + "T00:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" })} · {b.scheduled_time} Uhr · €{(b.final_price ?? b.service_price).toFixed(0)}
                     </Text>
                   </View>
                   <View style={[styles.pill, { backgroundColor: STATUS_META[b.status]?.bg }]}>
