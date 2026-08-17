@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radius, spacing, typography } from "@/src/lib/theme";
-import { api, Booking } from "@/src/lib/api";
+import { api, getDeviceId, Booking } from "@/src/lib/api";
 
 export default function Checkout() {
   const router = useRouter();
@@ -26,10 +26,17 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!id) return;
-    api.getBooking(id)
-      .then(setBooking)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        const deviceId = await getDeviceId();
+        const b = await api.getBooking(id, deviceId);
+        setBooking(b);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
   function formatCard(v: string) {
@@ -47,12 +54,13 @@ export default function Checkout() {
     setError("");
     setPaying(true);
     try {
+      const deviceId = await getDeviceId();
       await api.payBooking(booking.id, {
         card_number: cardNumber,
         card_holder: holder.trim(),
         exp,
         cvc,
-      });
+      }, deviceId);
       router.replace({ pathname: "/success", params: { id: booking.id } });
     } catch (e: any) {
       const msg = (e.message || "").toString();

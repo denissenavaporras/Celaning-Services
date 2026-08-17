@@ -1,4 +1,5 @@
 import { storage } from "@/src/utils/storage";
+import * as Crypto from "expo-crypto";
 
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL;
 const API = `${BASE}/api`;
@@ -37,7 +38,7 @@ export type Booking = {
   final_price?: number;
 };
 
-async function jsonReq<T>(path: string, opts: RequestInit = {}, auth = false): Promise<T> {
+async function jsonReq<T>(path: string, opts: RequestInit = {}, auth = false, deviceId?: string): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(opts.headers as Record<string, string> | undefined),
@@ -45,6 +46,9 @@ async function jsonReq<T>(path: string, opts: RequestInit = {}, auth = false): P
   if (auth) {
     const token = await storage.secureGet<string>("admin_token", "");
     if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (deviceId) {
+    headers["X-Device-Id"] = deviceId;
   }
   const res = await fetch(`${API}${path}`, { ...opts, headers });
   const text = await res.text();
@@ -65,9 +69,10 @@ export const api = {
   listServices: () => jsonReq<Service[]>("/services"),
   createBooking: (payload: any) =>
     jsonReq<Booking>("/bookings", { method: "POST", body: JSON.stringify(payload) }),
-  payBooking: (id: string, payload: any) =>
-    jsonReq<Booking>(`/bookings/${id}/pay`, { method: "POST", body: JSON.stringify(payload) }),
-  getBooking: (id: string) => jsonReq<Booking>(`/bookings/${id}`),
+  payBooking: (id: string, payload: any, deviceId: string) =>
+    jsonReq<Booking>(`/bookings/${id}/pay`, { method: "POST", body: JSON.stringify(payload) }, false, deviceId),
+  getBooking: (id: string, deviceId: string) =>
+    jsonReq<Booking>(`/bookings/${id}`, {}, false, deviceId),
   customerBookings: (deviceId: string) =>
     jsonReq<Booking[]>(`/bookings/customer/${encodeURIComponent(deviceId)}`),
   validateDiscount: (code: string, price: number) =>
@@ -112,11 +117,17 @@ export const api = {
     jsonReq<{ ok: boolean }>(`/admin/services/${id}`, { method: "DELETE" }, true),
 };
 
-// device id helpers
+// device id helpers — uses crypto-strong UUID
 export async function getDeviceId(): Promise<string> {
   let id = await storage.getItem<string>("device_id", "");
   if (!id) {
-    id = `dev-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    try {
+      id = Crypto.randomUUID();
+    } catch {
+      // Fallback for older RN environments (unlikely on SDK 54)
+      const buf = await Crypto.getRandomBytesAsync(16);
+      id = Array.from(buf).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
     await storage.setItem("device_id", id);
   }
   return id;

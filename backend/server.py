@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,6 +6,9 @@ import os
 import logging
 import uuid
 import asyncio
+import html
+import time
+from urllib.parse import quote as urlquote
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
@@ -19,8 +22,10 @@ load_dotenv(ROOT_DIR / ".env")
 
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
-JWT_SECRET = os.environ.get("JWT_SECRET", "limpiahogar-super-secret-key-change-me")
+JWT_SECRET = os.environ.get("JWT_SECRET", "").strip()
 JWT_ALG = "HS256"
+if not JWT_SECRET or len(JWT_SECRET) < 32:
+    raise RuntimeError("JWT_SECRET must be set to a strong random value (>=32 chars).")
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -187,16 +192,29 @@ def clean_doc(doc: dict) -> dict:
 
 # ---------- Seed ----------
 async def seed_data():
-    # Seed admin
-    admin_email = "admin@limpia.com"
+    # Seed admin from env (never hard-code)
+    admin_email = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD") or ""
+    if not admin_email or len(admin_password) < 12:
+        raise RuntimeError("ADMIN_EMAIL and ADMIN_PASSWORD (>=12 chars) must be set in env.")
+
     existing = await db.admins.find_one({"email": admin_email})
+    hashed = pwd_context.hash(admin_password)
     if not existing:
         await db.admins.insert_one({
             "email": admin_email,
-            "password_hash": pwd_context.hash("admin123"),
+            "password_hash": hashed,
             "created_at": datetime.now(timezone.utc),
         })
-        logger.info("Admin seeded: admin@limpia.com / admin123")
+        logger.info("Admin seeded from env for email=%s", admin_email)
+    else:
+        # Rotate the password if it doesn't match the env value.
+        if not pwd_context.verify(admin_password, existing["password_hash"]):
+            await db.admins.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hashed, "rotated_at": datetime.now(timezone.utc)}},
+            )
+            logger.info("Admin password rotated from env for email=%s", admin_email)
 
     # Seed services (Cleaning Service Wels packs in EUR - German)
     SEED_VERSION = "wels_packs_v2_de"
@@ -253,6 +271,30 @@ async def _shutdown():
     client.close()
 
 
+# ---------- Rate limiting (in-memory) ----------
+_LOGIN_ATTEMPTS: dict = {}  # ip -> (window_start_ts, count)
+_LOGIN_WINDOW_S = 60
+_LOGIN_MAX = 5
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_login_rate(ip: str):
+    now = time.time()
+    win_start, count = _LOGIN_ATTEMPTS.get(ip, (now, 0))
+    if now - win_start > _LOGIN_WINDOW_S:
+        _LOGIN_ATTEMPTS[ip] = (now, 1)
+        return
+    if count >= _LOGIN_MAX:
+        raise HTTPException(status_code=429, detail="Zu viele Anmeldeversuche. Bitte warten Sie eine Minute.")
+    _LOGIN_ATTEMPTS[ip] = (win_start, count + 1)
+
+
 # ---------- Public endpoints ----------
 @api.get("/")
 async def root():
@@ -296,34 +338,50 @@ async def send_booking_notification(booking: dict):
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
 
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={booking['address'].replace(' ', '+')}"
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={urlquote(booking['address'])}"
+        esc = html.escape
+        name = esc(str(booking.get('customer_name', '')))
+        phone_raw = str(booking.get('customer_phone', ''))
+        phone_display = esc(phone_raw)
+        phone_href_num = "".join(c for c in phone_raw if c.isdigit() or c == "+")
+        phone_href = urlquote(phone_href_num, safe="+")
+        service = esc(str(booking.get('service_name', '')))
+        address = esc(str(booking.get('address', '')))
+        notes = esc(str(booking.get('notes') or '—'))
+        status_txt = esc(str(booking.get('status', '')))
+        booking_id_s = esc(str(booking.get('id', '')))
+        date_s = esc(str(booking.get('scheduled_date', '')))
+        time_s = esc(str(booking.get('scheduled_time', '')))
         discount_line = ""
         if booking.get("discount_code"):
-            discount_line = f"<p><b>Rabatt:</b> {booking['discount_code']} (–€{booking.get('discount_amount', 0):.2f})</p>"
+            discount_line = (
+                f"<p><b>Rabatt:</b> {esc(str(booking['discount_code']))} "
+                f"(–€{booking.get('discount_amount', 0):.2f})</p>"
+            )
 
-        html = f"""
+        html_body = f"""
         <div style="font-family: -apple-system, sans-serif; max-width: 560px;">
           <h2 style="color:#5D7B1E;">Neue Buchung — Cleaning Service Wels</h2>
-          <p><b>Kunde:</b> {booking['customer_name']}<br/>
-             <b>Telefon:</b> <a href="tel:{booking['customer_phone']}">{booking['customer_phone']}</a></p>
-          <p><b>Service:</b> {booking['service_name']}<br/>
-             <b>Datum:</b> {booking['scheduled_date']} um {booking['scheduled_time']} Uhr</p>
-          <p><b>Adresse:</b> {booking['address']}<br/>
+          <p><b>Kunde:</b> {name}<br/>
+             <b>Telefon:</b> <a href="tel:{phone_href}">{phone_display}</a></p>
+          <p><b>Service:</b> {service}<br/>
+             <b>Datum:</b> {date_s} um {time_s} Uhr</p>
+          <p><b>Adresse:</b> {address}<br/>
              <a href="{maps_url}">Route in Google Maps öffnen</a></p>
           {discount_line}
           <p><b>Endpreis:</b> €{booking.get('final_price', booking['service_price']):.2f}</p>
-          <p><b>Status:</b> {booking['status']}</p>
-          <p><b>Notizen:</b> {booking.get('notes') or '—'}</p>
+          <p><b>Status:</b> {status_txt}</p>
+          <p><b>Notizen:</b> {notes}</p>
           <hr/>
-          <p style="color:#636366; font-size:12px;">Buchungs-ID: {booking['id']}</p>
+          <p style="color:#636366; font-size:12px;">Buchungs-ID: {booking_id_s}</p>
         </div>
         """
 
         message = Mail(
             from_email=sender,
             to_emails=to_email,
-            subject=f"Neue Buchung: {booking['customer_name']} – {booking['scheduled_date']} {booking['scheduled_time']}",
-            html_content=html,
+            subject=f"Neue Buchung: {name} – {date_s} {time_s}",
+            html_content=html_body,
         )
         sg = SendGridAPIClient(api_key)
         resp = sg.send(message)
@@ -373,10 +431,12 @@ async def create_booking(payload: BookingCreate):
 
 
 @api.post("/bookings/{booking_id}/pay", response_model=Booking)
-async def pay_booking(booking_id: str, payload: PayRequest):
+async def pay_booking(booking_id: str, payload: PayRequest, x_device_id: Optional[str] = Header(default=None)):
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    if not x_device_id or booking.get("device_id") != x_device_id:
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
     if booking["status"] != "pending_payment":
         raise HTTPException(status_code=400, detail="Esta cita ya está pagada")
 
@@ -415,16 +475,28 @@ async def customer_bookings(device_id: str):
 
 
 @api.get("/bookings/{booking_id}", response_model=Booking)
-async def get_booking(booking_id: str):
+async def get_booking(booking_id: str, x_device_id: Optional[str] = Header(default=None), authorization: Optional[str] = Header(default=None)):
     doc = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    # Allow if admin JWT is valid OR if the request comes from the booking's device
+    is_admin = False
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+            is_admin = payload.get("role") == "admin"
+        except Exception:
+            pass
+    if not is_admin and (not x_device_id or doc.get("device_id") != x_device_id):
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
     return clean_doc(doc)
 
 
 # ---------- Admin ----------
 @api.post("/admin/login")
-async def admin_login(payload: AdminLogin):
+async def admin_login(payload: AdminLogin, request: Request):
+    _check_login_rate(_client_ip(request))
     admin = await db.admins.find_one({"email": payload.email.lower().strip()})
     if not admin or not pwd_context.verify(payload.password, admin["password_hash"]):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")

@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radius, spacing, typography } from "@/src/lib/theme";
-import { api, Booking } from "@/src/lib/api";
+import { api, getDeviceId, Booking } from "@/src/lib/api";
 
 export default function Success() {
   const router = useRouter();
@@ -15,7 +15,15 @@ export default function Success() {
 
   useEffect(() => {
     if (!id) return;
-    api.getBooking(id).then(setBooking).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const deviceId = await getDeviceId();
+        const b = await api.getBooking(id, deviceId);
+        setBooking(b);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
   function openMaps() {

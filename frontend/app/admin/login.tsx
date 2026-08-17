@@ -14,8 +14,8 @@ import { storage } from "@/src/utils/storage";
 
 export default function AdminLogin() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@limpia.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -70,7 +70,7 @@ export default function AdminLogin() {
               testID="admin-email"
               value={email}
               onChangeText={setEmail}
-              placeholder="admin@limpia.com"
+              placeholder="ihre-email@beispiel.at"
               placeholderTextColor={colors.info}
               autoCapitalize="none"
               autoComplete="email"
@@ -94,7 +94,7 @@ export default function AdminLogin() {
               {loading ? <ActivityIndicator color={colors.onBrandPrimary} /> : <Text style={styles.btnTxt}>Anmelden</Text>}
             </Pressable>
 
-            <Text style={styles.helper}>Demo-Konto: admin@limpia.com / admin123</Text>
+            <Text style={styles.helper}>Nur autorisiertes Personal.</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

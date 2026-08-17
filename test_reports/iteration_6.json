@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 6 SECURITY FIXES — All 32 backend pytest tests PASS (was 33, consolidated a few). SEC-001, SEC-002, SEC-003, and P3 rate limiting all verified. Frontend E2E flow (book → checkout → success → my-bookings) works with X-Device-Id header transparently attached. Admin login uses new password Kwtklaz52URXLj8zHaIhaQ, fields empty by default, helper text = 'Nur autorisiertes Personal.'. device_id generated as canonical UUID v4 via expo-crypto (verified in network request: e.g. db55b0da-3315-44e2-81b5-c66d2112d2eb). Old admin123 password correctly rejected with 401. Rate limit returns 429 with German message after 5 attempts in 60s. HTML-escape source-reviewed in send_booking_notification.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Emitted from theme/styles. Not blocking, but should be migrated to boxShadow (RN 0.76+ / Expo SDK 54). Reference: search StyleSheet.create entries using shadowColor/shadowOpacity/shadowRadius/shadowOffset."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Migrate deprecated `shadow*` StyleSheet props to `boxShadow` to silence RN warning.",
+    "OPTIONAL: In /app/backend/tests/test_backend.py the class-scoped fixtures declared as instance methods emit a PytestRemovedIn10Warning. Convert to @classmethod or module-scoped fixtures for future compatibility."
+  ],
+  "critical_code_review_comments": [
+    "SEC-001 correctly implemented: JWT_SECRET length-checked (>=32) at import; ADMIN_EMAIL/ADMIN_PASSWORD (>=12) enforced in seed_data() with RuntimeError. Admin doc rotates password if env changes.",
+    "SEC-002 correctly implemented: GET /api/bookings/{id} and POST /api/bookings/{id}/pay both check X-Device-Id or admin Bearer JWT. Customer-list endpoint /bookings/customer/{device_id} remains open (device_id acts as bearer secret in path — acceptable given UUID entropy).",
+    "SEC-003 correctly implemented: send_booking_notification uses html.escape on all customer fields (name, phone_display, service, address, notes, status, id, date/time, discount_code). Phone tel: href uses digit-only filtered + urlquote — safe.",
+    "P3 rate limit: in-memory _LOGIN_ATTEMPTS dict, 5 attempts / 60s / IP; uses x-forwarded-for (first hop). Works behind ingress. NOTE: single-process only — if backend scales horizontally, limits become per-worker.",
+    "Frontend api.ts correctly plumbs X-Device-Id through payBooking/getBooking; other public endpoints (services, discount validate) do not need it."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend.py (rewrote for iteration 6: new password, X-Device-Id headers on booking GET/pay, added SEC-001/002 tests, XSS payload sanity test, rate-limit test as TestZZRateLimit)"
+  ],
+  "success_rate": {"backend": "100% (32/32)", "frontend": "100% (all flows verified)"},
+  "seed_data_creation": "No permanent seed; tests create ephemeral TEST_ prefixed bookings/services. Rate-limit test waits 60s to reset window before running.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "IMPORTANT: The in-memory rate limit is shared per backend IP. Running pytest triggers the limiter, so browser-based frontend admin-login tests immediately after pytest may hit 429. Wait ~65s between the two suites OR reduce rate-limit test iterations. Admin password now `Kwtklaz52URXLj8zHaIhaQ` (env-driven). device_id in localStorage is JSON-stringified (quoted); the raw UUID sent in X-Device-Id header is a proper 36-char canonical UUID v4 (verified via network capture). Existing users with legacy device_ids will keep them — only cleared storage generates the new UUID.",
+  "rca_of_issue": "No blocking issues found. Verified via network capture that X-Device-Id header is attached transparently: POST /bookings (public, no header needed), GET /bookings/{id} + POST /bookings/{id}/pay both send correct UUID v4 X-Device-Id."
+}
