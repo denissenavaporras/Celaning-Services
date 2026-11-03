@@ -1,0 +1,287 @@
+{
+  "project_title": "Reinigung & OÖ Haus-Service - Oberösterreich",
+  "language": "German (de)",
+  "app_type": "marketing_site_with_admin_and_chatbot",
+  "emotional_archetype": "ORGANIC_AND_FRESH_TRUST",
+  "color_palette": {
+    "theme": "light",
+    "primary": "#0F5132",
+    "primary_hover": "#0C4128",
+    "primary_light": "#E8F5E9",
+    "accent_blue": "#0284C7",
+    "accent_blue_hover": "#0369A1",
+    "accent_blue_light": "#E0F2FE",
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "surface_card": "#FFFFFF",
+    "surface_tinted": "#F1F5F9",
+    "text_main": "#0F172A",
+    "text_muted": "#475569",
+    "border": "#E2E8F0",
+    "border_highlight": "#CBD5E1",
+    "status_success": "#16A34A",
+    "status_warning": "#EAB308",
+    "status_error": "#DC2626"
+  },
+  "typography": {
+    "headline_font": "Outfit, sans-serif",
+    "body_font": "Plus Jakarta Sans, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "google_fonts_import": "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg font-semibold",
+      "body_lg": "text-lg leading-relaxed text-slate-700",
+      "body": "text-base leading-normal text-slate-600",
+      "caption": "text-sm text-slate-500 font-medium",
+      "label": "text-xs uppercase tracking-widest font-semibold text-emerald-800"
+    }
+  },
+  "brand_identity": {
+    "company_name": "OÖ Glanz & Service GmbH",
+    "tagline": "Verlässliche Sauberkeit & Haus-Service in Oberösterreich",
+    "location": "Linz & Gesamtes Oberösterreich (Wels, Steyr, Innviertel, Mühlviertel)",
+    "phone": "+43 (0) 732 987 654",
+    "email": "kontakt@ooeglanz-service.at",
+    "whatsapp": "+4366412345678",
+    "core_values": [
+      "100% Zuverlässig & Pünktlich",
+      "Faire & Transparente Preise",
+      "Erfahrenes & Versichertes Team",
+      "Regionale Nähe in Oberösterreich"
+    ]
+  },
+  "layout_and_navigation": {
+    "header": {
+      "style": "Sticky with backdrop-blur-md bg-white/90 border-b border-slate-200 z-50",
+      "desktop_navigation": [
+        {"label": "Startseite", "path": "/"},
+        {"label": "Leistungen & Preise", "path": "/leistungen"},
+        {"label": "Über uns", "path": "/ueber-uns"},
+        {"label": "Kontakt", "path": "/kontakt"}
+      ],
+      "actions": [
+        {"label": "Admin Login", "path": "/admin", "variant": "outline"},
+        {"label": "Jetzt Anfragen", "path": "/kontakt", "variant": "primary"}
+      ]
+    },
+    "footer": {
+      "style": "bg-slate-900 text-slate-300 pt-16 pb-12 border-t border-slate-800",
+      "sections": [
+        "Brand summary & Region Oberösterreich",
+        "Schnelllinks (Leistungen, Über uns, Kontakt)",
+        "Dienstleistungen Highlights (Wohnungsreinigung, Photovoltaik, Winterdienst)",
+        "Social Links: Instagram, Facebook, Direct WhatsApp Chat link",
+        "Rechtliches: Impressum & Datenschutz links"
+      ]
+    }
+  },
+  "pages_and_components": {
+    "home_page": {
+      "hero": {
+        "eyebrow": "Oberösterreichs Nr. 1 Haus- & Reinigungsservice",
+        "title": "Glänzende Aussichten für Ihr Zuhause & Ihren Garten",
+        "subtitle": "Professionelle Wohnungsreinigung, Dach- & PV-Pflege, Gartenbetreuung und verlässlicher Winterdienst ab 40 €/Std. in Linz, Wels, Steyr & Umgebung.",
+        "cta_primary": {"text": "Kostenloses Angebot anfordern", "target": "#angebot-form", "data_testid": "hero-primary-cta"},
+        "cta_secondary": {"text": "Dienstleistungen ansehen", "target": "/leistungen", "data_testid": "hero-secondary-cta"},
+        "hero_image": "https://images.unsplash.com/photo-1758273705627-937374bfa978?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "trust_badges": [
+          "5.0 ★ Top Kundenbewertungen in OÖ",
+          "Transparente Stundensätze",
+          "Kostenlose Besichtigung"
+        ]
+      },
+      "services_overview": {
+        "title": "Unsere Leistungen im Überblick",
+        "subtitle": "Alles aus einer Hand für Immobilie, Garten & Außenbereich",
+        "cards": [
+          {
+            "id": "wohnungsreinigung",
+            "title": "Wohnungs- & Hausreinigung",
+            "desc": "Gründliche Unterhalts- und Grundreinigung für private Haushalte und Firmen.",
+            "price_tag": "ab 32 € / Std.",
+            "icon": "Sparkles"
+          },
+          {
+            "id": "dach-pv",
+            "title": "Dach-, Dachrinnen & PV-Reinigung",
+            "desc": "Werterhalt Ihrer Solaranlage und Schutz vor Wasserschäden durch saubere Rinnen.",
+            "price_tag": "ab 45 € / Std. bzw. Festpreis",
+            "icon": "Sun"
+          },
+          {
+            "id": "garten-herbst",
+            "title": "Garten & Wintervorbereitung",
+            "desc": "Rasenpflege, Heckenschnitt, Laubentsorgung und winterfeste Aufbereitung.",
+            "price_tag": "ab 38 € / Std.",
+            "icon": "Trees"
+          },
+          {
+            "id": "winterdienst",
+            "title": "Winterdienst & Schneeräumung",
+            "desc": "Gesetzlich konforme Schneeräumung & Bestreuung für Gehwege & Zufahrten.",
+            "price_tag": "Fixpreis 40 € / Std.",
+            "icon": "Snowflake"
+          }
+        ]
+      },
+      "advantages": {
+        "title": "Warum OÖ Glanz & Service?",
+        "items": [
+          {"title": "100% Regionale Betreuung", "desc": "Kurze Anfahrtswege in ganz Oberösterreich.", "icon": "MapPin"},
+          {"title": "Transparente Preisgestaltung", "desc": "Keine versteckten Kosten – faire Stundensätze & Festpreise.", "icon": "CheckCircle2"},
+          {"title": "Haftpflichtversichert", "desc": "Rundum abgesichert für ein gutes Gefühl bei jedem Einsatz.", "icon": "ShieldCheck"},
+          {"title": "Flexibel & Schnell", "desc": "Kurzfristige Termine & persönliche Ansprechpartner.", "icon": "Clock"}
+        ]
+      }
+    },
+    "services_page": {
+      "path": "/leistungen",
+      "price_table": {
+        "title": "Preise & Leistungspakete",
+        "subtitle": "Faire und nachvollziehbare Konditionen ohne versteckte Gebühren",
+        "services": [
+          {
+            "name": "Wohnungsreinigung Standard",
+            "rate": "32 € / Std.",
+            "details": "Inkl. Reinigungsmittel, Staubsaugen, Wischen, Bad & WC Hygiene, Oberflächen entstauben.",
+            "highlight": false
+          },
+          {
+            "name": "Grundreinigung & Umzugsreinigung",
+            "rate": "39 € / Std.",
+            "details": "Tiefenreinigung inkl. Fenster, Backofen, Schrankinnenräume & Übergabegarantie.",
+            "highlight": true
+          },
+          {
+            "name": "Dachrinnen- & Photovoltaikreinigung",
+            "rate": "ab 45 € / Std.",
+            "details": "Schonende Entfernung von Moos, Laub & Schmutz zur Ertragssteigerung Ihrer PV-Anlage.",
+            "highlight": false
+          },
+          {
+            "name": "Gartenpflege & Herbst-Vorbereitung",
+            "rate": "38 € / Std.",
+            "details": "Heckenschnitt, Rasen mähen, Laub entfernen, Beete winterfest machen.",
+            "highlight": false
+          },
+          {
+            "name": "Winterdienst (Schneeräumung)",
+            "rate": "40 € / Std.",
+            "details": "Schneeräumung & Streudienst nach StVO. Verlässlich ab 05:00 Uhr morgens.",
+            "highlight": true
+          }
+        ]
+      }
+    },
+    "contact_page": {
+      "path": "/kontakt",
+      "form_fields": [
+        {"name": "name", "label": "Vollständiger Name", "type": "text", "required": true, "data_testid": "contact-input-name"},
+        {"name": "phone", "label": "Telefonnummer", "type": "tel", "required": true, "data_testid": "contact-input-phone"},
+        {"name": "email", "label": "E-Mail Adresse", "type": "email", "required": true, "data_testid": "contact-input-email"},
+        {
+          "name": "service",
+          "label": "Gewünschte Leistung",
+          "type": "select",
+          "options": [
+            "Wohnungs- & Hausreinigung",
+            "Dach- & PV-Anlagenreinigung",
+            "Garten & Wintervorbereitung",
+            "Winterdienst (40€/h)",
+            "Sonstiges / Gesamtpaket"
+          ],
+          "required": true,
+          "data_testid": "contact-select-service"
+        },
+        {"name": "message", "label": "Ihre Nachricht", "type": "textarea", "required": true, "data_testid": "contact-input-message"}
+      ],
+      "submit_button": {"text": "Anfrage absenden", "data_testid": "contact-submit-button"}
+    },
+    "legal_pages": {
+      "impressum": "/impressum",
+      "datenschutz": "/datenschutz"
+    },
+    "chatbot_widget": {
+      "component_name": "AIChatbotWidget",
+      "description": "Floating action button bottom-right (bottom-6 right-6 z-50). Opens animated chat drawer answering price & service questions in German.",
+      "preset_questions": [
+        "Was kostet die Wohnungsreinigung?",
+        "Wie teuer ist der Winterdienst?",
+        "Reinigt ihr auch Solaranlagen?",
+        "In welchen Bezirken in OÖ seid ihr aktiv?"
+      ],
+      "data_testids": {
+        "toggle_button": "chatbot-toggle-button",
+        "chat_window": "chatbot-window",
+        "input_field": "chatbot-input",
+        "send_button": "chatbot-send-button"
+      }
+    },
+    "admin_panel": {
+      "route": "/admin",
+      "login_credentials_demo": {
+        "username": "admin",
+        "password": "cleaner2026password"
+      },
+      "features": [
+        "Authentifizierung mit State (Session / LocalStorage)",
+        "Liste aller eingegangenen Kontaktanfragen",
+        "Filterung nach Status (Neu, In Bearbeitung, Erledigt)",
+        "Detailansicht für Kundenanfrage mit Anruffunktion",
+        "Option zum Löschen oder Status-Ändern"
+      ],
+      "data_testids": {
+        "login_user": "admin-login-username",
+        "login_pass": "admin-login-password",
+        "login_submit": "admin-login-submit",
+        "submissions_table": "admin-submissions-table"
+      }
+    }
+  },
+  "media_assets": {
+    "images": [
+      {
+        "category": "hero",
+        "url": "https://images.unsplash.com/photo-1758273705627-937374bfa978?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Frau saugt sauberes Wohnzimmer"
+      },
+      {
+        "category": "living_room_clean",
+        "url": "https://images.unsplash.com/photo-1554995207-c18c203602cb?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Gepflegtes helles Wohnzimmer"
+      },
+      {
+        "category": "window_cleaning",
+        "url": "https://images.unsplash.com/photo-1581493092513-346ac43f82a4?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Professionelle Fensterreinigung"
+      },
+      {
+        "category": "roof_solar",
+        "url": "https://images.unsplash.com/photo-1759487358643-fd21a52eb2d8?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Haus mit Photovoltaik in Oberösterreich"
+      },
+      {
+        "category": "landscape_austria",
+        "url": "https://images.unsplash.com/photo-1601468838713-5cfc025cc2ae?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Oberösterreichische Landschaft"
+      },
+      {
+        "category": "winterdienst",
+        "url": "https://images.unsplash.com/photo-1674049406206-83d38bd15c8a?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Schneeräumung und Winterdienst"
+      }
+    ]
+  },
+  "instructions_for_implementation": [
+    "Ensure all components use standard .js extension with React hooks.",
+    "Import Lucide-React icons (Sparkles, Sun, Trees, Snowflake, Phone, Mail, MapPin, CheckCircle2, ShieldCheck, Clock, MessageSquare, Lock, X, Send).",
+    "Use Tailwind CSS for styling with generous spacing (p-6, p-8, p-12).",
+    "Include floating chatbot widget persistently on public pages.",
+    "Add interactive admin login form and table for viewing contact submissions with localStorage fallback storage.",
+    "Add toast notifications via Sonner when contact forms are submitted.",
+    "Ensure all data-testid attributes specified are attached to their respective UI elements."
+  ]
+}

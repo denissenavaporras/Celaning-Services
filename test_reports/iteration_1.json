@@ -1,0 +1,44 @@
+{
+  "summary": "First full E2E run (backend pytest 18 tests + Playwright on desktop and mobile). Found and fixed 2 critical bugs: (1) the admin contacts API returned '_id' instead of 'id' because FastAPI serializes by alias, so status changes and deletes in the dashboard were broken; (2) the ChatWidget crashed the whole page with 'destroy is not a function' after sending a message, because useEffect implicitly returned the value of scrollIntoView (newer Chrome returns a Promise). After the fixes everything passes except brute-force lockout, which does not work behind the ingress. The home hero text matches the requirements word for word, both CTAs work, the overview cards jump to the right sections, all Leistungen prices are shown, the contact form works (required-field check, toast when no service is picked, success screen, email_sent true), the chatbot gives correct German answers with prices (Winterdienst 40 €, Müll 5 €, Tiefenreinigung 250 €) and remembers the session history, and the admin flow works (redirect, wrong-password error, login, list, status change persists, filters, delete with confirm, logout). The footer, Impressum, Datenschutz and the mobile menu also work.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/auth/login", "issue": "Brute-force lockout does not work in production. The identifier is request.client.host + email, but behind the k8s ingress the client host is the proxy pod IP, which changes between requests (seen: 10.231.129.156 and .157). Attempts get split across several counters and the 6th wrong attempt still returns 401, not 429. Fix: use the first IP from the X-Forwarded-For header (or key the lockout on email only).", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "GET/PATCH /api/admin/contacts", "issue": "FIXED by testing agent: added response_model_by_alias=False so the response has 'id' and not '_id'."},
+      {"endpoint": "CORS", "issue": "CORS_ORIGINS='*' together with allow_credentials=True. Auth uses a Bearer token, so this does not break anything, but it goes against the playbook (explicit origins). No httpOnly cookie is set on login; the token is kept in localStorage (a design choice, XSS exposure)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ChatWidget", "issue": "FIXED by testing agent: useEffect(() => endRef.current?.scrollIntoView(...)) returned a Promise, which crashed the app when a chat message was sent. Wrapped the body in braces.", "selector": "[data-testid=chatbot-preset-*]", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [
+      {"flow": "Chat error handling", "issue": "If /api/chat returns a non-SSE response (for example a 422 JSON error), the reader never parses it and the assistant bubble keeps showing the loading dots. Check res.ok before reading the stream.", "affected_selectors": ["chatbot-message-*"]}
+    ],
+    "design_issues": [
+      {"screen": "Mobile home (390px)", "issues": ["The floating chatbot button covers the right edge of the full-width hero primary CTA."]},
+      {"screen": "Footer", "issues": ["The Instagram/Facebook links point to the generic https://instagram.com/ and https://facebook.com/ (placeholders).", "Impressum and Datenschutz contain bracketed placeholders ([Inhaber/in], [Adresse])."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_cleaning_services_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix the login lockout identifier behind the proxy (X-Forwarded-For or email-only key) so that the 6th failed attempt returns 429",
+    "ChatWidget: handle non-OK responses (res.ok) so the bubble does not keep loading forever",
+    "Optional: set explicit CORS origins; replace the social link and Impressum placeholders with the owner's data; add bottom padding on mobile or move the chat button so it does not overlap the CTA"
+  ],
+  "critical_code_review_comments": [
+    "server.py: response_model with alias '_id' needs response_model_by_alias=False (fixed)",
+    "server.py: login rate-limit uses request.client.host, which is unreliable behind the ingress",
+    "ChatWidget.js: arrow-function useEffect bodies must not return values (fixed)",
+    "ChatWidget.js: JSON.parse of SSE lines is not wrapped in try/catch, so a malformed line drops the rest of the stream"
+  ],
+  "updated_files": ["/app/backend/server.py", "/app/frontend/src/components/site/ChatWidget.js", "/app/backend/tests/test_cleaning_services_api.py"],
+  "success_rate": {"backend": "94% (17/18 after fix)", "frontend": "100% after fix"},
+  "test_credentials": "admin@cleaning-services.at / Admin2026! (from /app/memory/test_credentials.md, works). bcrypt hash starts with $2b$. The seed only inserts the admin if missing.",
+  "seed_data_creation": "No seed data. 2 TEST_ contact submissions (to delivered@resend.dev; the owner email received 2 notifications) were created and deleted. The contacts collection is empty again.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest /app/backend/tests/test_cleaning_services_api.py (needs the REACT_APP_BACKEND_URL env var). test_bruteforce_lockout is expected to fail until the proxy IP issue is fixed. Clean up afterwards with db.login_attempts.deleteMany({identifier:/test_lock/}). Every contact test sends a real email to the owner, so keep them few.",
+  "rca of the issue": "1) The Contact model has id aliased to '_id'. FastAPI serializes response_model output by alias by default, so the API returned '_id'. The frontend's c.id was undefined, which broke the PATCH/DELETE URLs and the React keys. 2) In ChatWidget, the useEffect concise arrow returned the result of scrollIntoView, and current Chromium returns a Promise there. React treated it as the cleanup function and threw 'destroy is not a function' on the next re-render (after sending a message)."
+}
