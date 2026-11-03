@@ -15,12 +15,12 @@ const Row = ({ c, onStatus, onDelete }) => (
   <div className="bg-white rounded-2xl border border-slate-200 p-5 grid md:grid-cols-12 gap-4" data-testid={`admin-contact-${c.id}`}>
     <div className="md:col-span-4 space-y-1">
       <p className="font-semibold text-slate-900">{c.name}</p>
-      <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-sm text-[#0369A1] hover:underline"><Phone className="h-3.5 w-3.5" />{c.phone}</a>
-      <a href={`mailto:${c.email}`} className="flex items-center gap-2 text-sm text-[#0369A1] hover:underline break-all"><Mail className="h-3.5 w-3.5" />{c.email}</a>
+      <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-sm text-[#0D5CA3] hover:underline"><Phone className="h-3.5 w-3.5" />{c.phone}</a>
+      <a href={`mailto:${c.email}`} className="flex items-center gap-2 text-sm text-[#0D5CA3] hover:underline break-all"><Mail className="h-3.5 w-3.5" />{c.email}</a>
       <p className="text-xs text-slate-400">{new Date(c.created_at).toLocaleString("de-AT")}</p>
     </div>
     <div className="md:col-span-5 space-y-2">
-      <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E8F5E9] text-[#0F5132]" data-testid={`admin-contact-service-${c.id}`}>{c.service}</span>
+      <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-[#EEF7E4] text-[#1170C4]" data-testid={`admin-contact-service-${c.id}`}>{c.service}</span>
       <p className="text-sm text-slate-600 whitespace-pre-wrap">{c.message || "–"}</p>
       <p className="flex items-center gap-1.5 text-xs text-slate-400">{c.email_sent ? <MailCheck className="h-3.5 w-3.5 text-emerald-600" /> : <MailX className="h-3.5 w-3.5 text-red-500" />}{c.email_sent ? "E-Mail versendet" : "E-Mail nicht versendet"}</p>
     </div>
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (
               <button key={f} onClick={() => setFilter(f)} data-testid={`admin-filter-${f}`}
-                className={`text-sm font-semibold px-4 py-2 rounded-full transition-colors ${filter === f ? "bg-[#0F5132] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
+                className={`text-sm font-semibold px-4 py-2 rounded-full transition-colors ${filter === f ? "bg-[#1170C4] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
                 {f === "alle" ? "Alle" : STATUS[f]}
               </button>
             ))}

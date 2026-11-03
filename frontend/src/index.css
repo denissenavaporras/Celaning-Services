@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -17,7 +17,18 @@ h1, h2, h3, h4, .font-display {
     font-family: "Outfit", sans-serif;
 }
 
-::selection { background: #BBF7D0; color: #0F5132; }
+.font-brand { font-family: "Nunito", sans-serif; }
+
+::selection { background: #D9EEC4; color: #1E2F6B; }
+
+.bubbles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.bubbles span {
+    position: absolute; border-radius: 9999px;
+    background: radial-gradient(circle at 30% 28%, rgba(255,255,255,.95) 0 12%, rgba(17,112,196,.10) 45%, rgba(125,194,66,.14) 100%);
+    border: 1px solid rgba(17,112,196,.16);
+    animation: float 9s ease-in-out infinite;
+}
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
 
 @layer base {
     :root {

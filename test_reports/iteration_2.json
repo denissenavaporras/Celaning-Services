@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 2 tested the Round 2 rebrand and ran a regression. Backend pytest: 19/19 pass, including the new test_chat_region. Brute-force lockout now passes too (the X-Forwarded-For fix works). Playwright on desktop (1920) and mobile (390): page title 'Cleaning Services – Reinigung, Haus & Garten' is correct, and /favicon.svg returns 200 image/svg+xml. Header and footer both have the SVG logo with the wordmark 'Cleaning|SERVICES', and the logo links to /. The hero slogan, hero-service-area and the unchanged hero title and subtitle are correct. The brand bar has exactly 4 items with the exact texts. The overview cards link to /leistungen#wohnung, #garten, #dach and #winter. The CTA box links are correct: tel:+436641019869, https://wa.me/436641019869, mailto, and the button goes to /kontakt#angebot. No 'Amberg' or 'Gramastetten' appears on /, /leistungen, /kontakt, /impressum, /datenschutz or /admin/login, or in the source. winterdienst-area and the footer show 'Wels & 50 km Umgebung · bald Wien'. In the chatbot UI the Winterdienst answer gives 40 €/Std and 'Wels & 50 km Umgebung – bald auch Wien'. Contact form submit reaches the success screen. Admin flow works: login, list, status change persisted after reload, delete with confirm, logout. No horizontal overflow on mobile, the mobile menu works, and there are no page errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/chat (chat_knowledge.py)", "issue": "The KONTAKT section says 'Region: Oberösterreich (Winterdienst: Wels & 50 km Umgebung · bald Wien)', so Wels is the area for Winterdienst only. When asked 'Wo bietet ihr eure Leistungen an?', the bot answered 'Wir sind in ganz Oberösterreich für euch da' and named Wels only under Winterdienst. The site (hero, footer) shows Wels & 50 km · bald Wien as the general service area. Make it the general Einsatzgebiet in the prompt. The bot also uses du/euch while the site uses Sie; consider telling it to use the Sie form."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home CTA box, mobile 390px", "issues": ["The email 'denissenavaporras@gmail.com' breaks mid-word ('gmail.c' / 'om') because CtaLink uses break-all. Use break-words or a smaller font size on mobile instead."]},
+      {"screen": "Home hero, mobile 390px", "issues": ["Decorative soap bubbles sit over the H1 ('Ihr') and the hero text and badges, which looks a little cluttered. Consider hiding or shrinking some bubbles on small screens.", "The floating chat button still covers the end of the 'Auch an Feiertagen' badge row (carried over from iteration 1)."]},
+      {"screen": "index.html", "issues": ["<html lang=\"en\"> on a German site; it should be lang=\"de\". The theme-color meta is still #000000; consider #1170C4."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_cleaning_services_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "chat_knowledge.py: make 'Wels & 50 km Umgebung · bald Wien' the general service area (not only for Winterdienst) and ask the bot to use the formal Sie form",
+    "Brand.js CtaLink: replace break-all with break-words or anywhere so the email does not split mid-word on mobile",
+    "index.html: set lang='de' and theme-color #1170C4",
+    "Optional: reduce bubbles on mobile; avoid the chat FAB overlapping hero content"
+  ],
+  "critical_code_review_comments": [
+    "chat_knowledge.py: the service area is scoped to Winterdienst, which does not match the site-wide SERVICE_AREA constant",
+    "Placeholders from iteration 1 are still there (generic instagram.com/facebook.com links, Impressum placeholders)"
+  ],
+  "updated_files": ["/app/backend/tests/test_cleaning_services_api.py (added test_chat_region)"],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% of the requested flows; minor design issues only"},
+  "test_credentials": "admin@cleaning-services.at / Admin2026! works",
+  "seed_data_creation": "2 contact submissions with sender delivered@resend.dev (1 from pytest, 1 from UI 'TEST_Rebrand Tester'). Both were deleted by id, so the contacts collection is empty again. 2 owner notification emails were sent.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> pytest tests/test_cleaning_services_api.py (do not pass -p no:xdist; pytest.ini uses xdist). Every contact test sends a real email, so keep them few. Rebrand testids: header-logo-link, footer-logo-link, hero-slogan, hero-service-area, brand-bar-item-0..3, cta-box-*, winterdienst-area."
+}

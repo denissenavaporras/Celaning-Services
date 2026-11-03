@@ -66,3 +66,13 @@ User: "puedes activar a un bot que acompañe al usuario por la navegación del s
 - Company name: Cleaning Services
 - Telefon / WhatsApp: +436641019869
 - Email: denissenavaporras@gmail.com
+
+---
+# Round 2: Corporate identity
+User: "por favor cambia la imagen institucional del sitio web por algo que sea mas acorde a la imagen corporativa" — user shared logo, flyer and brand mockups (images were only shared in chat, no files). Brand as shown:
+- Logo: blue silhouettes of spray bottle, window squeegee and broom above a lime-green swoosh arc; wordmark "Cleaning" in bold rounded royal blue, "SERVICES" below in spaced dark-grey capitals. Recreate this logo (e.g. SVG) and use it in header/footer/favicon.
+- Colors: royal blue (~#1170C4), lime green (~#7DC242), white, navy (uniforms ~#1E2F6B). Soap-bubble motifs on light backgrounds.
+- Style: thin-line blue circle icons (vacuum, kitchen, lawnmower/hedge, plant + pruning shears); blue bar with icons for "365 Tage im Jahr · Feiertage ohne Zuschlag · Honorarnote auf Wunsch · Reinigungsmittel inklusive oder Ihre eigenen"; green-outlined CTA box "Jetzt Angebot anfragen" with phone, WhatsApp, email icons.
+- Flyer slogan: "Ihr sauberes Zuhause, das ganze Jahr".
+- Flyer service area: "Wels & 50 km Umgebung · bald Wien" (differs from current site's "Amberg, Gramastetten & Umgebung" — use the flyer's area).
+- Imagery should match: blue/green branded van, navy polos with logo, etc.

@@ -10,7 +10,7 @@ import { API, formatApiError } from "@/lib/api";
 import { SERVICE_OPTIONS } from "@/lib/content";
 
 const EMPTY = { name: "", phone: "", email: "", service: "", message: "" };
-const field = "h-12 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-[#16A34A]/40";
+const field = "h-12 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-[#5FA52E]/40";
 
 export const ContactForm = () => {
   const [form, setForm] = useState(EMPTY);
@@ -36,10 +36,10 @@ export const ContactForm = () => {
   if (done)
     return (
       <div className="text-center py-12 space-y-4" data-testid="contact-success">
-        <CheckCircle2 className="h-14 w-14 text-[#16A34A] mx-auto" />
+        <CheckCircle2 className="h-14 w-14 text-[#5FA52E] mx-auto" />
         <h3 className="text-2xl font-bold text-slate-900">Vielen Dank für Ihre Anfrage!</h3>
         <p className="text-slate-600">Wir melden uns so schnell wie möglich bei Ihnen.</p>
-        <button onClick={() => setDone(false)} className="text-sm font-semibold text-[#0284C7] hover:underline" data-testid="contact-new-request">Weitere Anfrage senden</button>
+        <button onClick={() => setDone(false)} className="text-sm font-semibold text-[#1170C4] hover:underline" data-testid="contact-new-request">Weitere Anfrage senden</button>
       </div>
     );
 
@@ -72,10 +72,10 @@ export const ContactForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="message">Nachricht / Details</Label>
-        <Textarea id="message" rows={5} value={form.message} onChange={set("message")} className="rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-[#16A34A]/40" placeholder="z. B. Wohnungsgröße, gewünschter Termin, Adresse..." data-testid="contact-input-message" />
+        <Textarea id="message" rows={5} value={form.message} onChange={set("message")} className="rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-[#5FA52E]/40" placeholder="z. B. Wohnungsgröße, gewünschter Termin, Adresse..." data-testid="contact-input-message" />
       </div>
       <button type="submit" disabled={loading} data-testid="contact-submit-button"
-        className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0F5132] hover:bg-[#0C4128] disabled:opacity-60 text-white font-semibold px-7 py-4 transition-colors">
+        className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#1170C4] hover:bg-[#0D5CA3] disabled:opacity-60 text-white font-semibold px-7 py-4 transition-colors">
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Anfrage absenden
       </button>
       <p className="text-xs text-slate-500">Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Daten gemäß unserer Datenschutzerklärung zu.</p>

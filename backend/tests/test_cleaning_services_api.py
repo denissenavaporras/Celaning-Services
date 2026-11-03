@@ -165,3 +165,14 @@ def test_chat_winterdienst_price(s):
 def test_chat_validation(s):
     r = s.post(f"{BASE_URL}/api/chat", json={"session_id": "ab", "message": ""})
     assert r.status_code == 422
+
+
+# Round 2: chatbot service area (Wels & 50 km, bald Wien; no Amberg/Gramastetten)
+def test_chat_region(s):
+    sid = f"TEST_{uuid.uuid4().hex[:10]}"
+    text, done, err = _chat(s, sid, "In welcher Region bzw. welchem Einsatzgebiet seid ihr tätig?")
+    assert err is None and done
+    assert "Wels" in text, text
+    assert "50" in text and "Wien" in text, text
+    assert "Amberg" not in text and "Gramastetten" not in text, text
+    print("REGION ANSWER:", text)

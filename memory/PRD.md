@@ -19,6 +19,13 @@ Read /app/memory/product/requirements.md and build it. (German-language website 
 - AI chatbot w/ persistent session history, price knowledge base
 - Admin panel: login, list, status (Neu/In Bearbeitung/Erledigt), filter, delete; brute-force lockout (X-Forwarded-For)
 
+## Round 2 – Corporate identity (2026-09)
+- SVG logo (BrandMark/BrandLogo) in header, footer, favicon; title/meta/lang=de
+- Brand colours royal blue #1170C4, lime #7DC242, navy #1E2F6B; soap-bubble motifs
+- Home: slogan, blue brand bar (4 items), thin-line circle icons, green-outlined CTA box (phone/WhatsApp/email)
+- Service area "Wels & 50 km Umgebung · bald Wien" across site + chatbot (Sie-form, no emojis)
+- New branded imagery (van, navy polos)
+
 ## Backlog
 - P1: Real Instagram/Facebook URLs, real Impressum/Datenschutz data
 - P2: Admin password change, cookie consent banner, SEO meta tags, multi-language (ES/EN)
