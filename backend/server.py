@@ -12,6 +12,7 @@ from urllib.parse import quote as urlquote
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 import jwt
@@ -44,10 +45,14 @@ class Service(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str
-    price: float
+    price: float  # hourly rate for pricing=hourly, 0 for quote
     duration_minutes: int = 120
     image_url: Optional[str] = None
     active: bool = True
+    category: str = "Reinigung"  # Reinigung | Garten | Winterdienst | Dach & PV
+    pricing: str = "hourly"  # hourly | quote
+    min_hours: int = 2
+    icon: str = "sparkles"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -58,6 +63,10 @@ class ServiceCreate(BaseModel):
     duration_minutes: int = 120
     image_url: Optional[str] = None
     active: bool = True
+    category: str = "Reinigung"
+    pricing: str = "hourly"
+    min_hours: int = 2
+    icon: str = "sparkles"
 
 
 class ServiceUpdate(BaseModel):
@@ -67,6 +76,26 @@ class ServiceUpdate(BaseModel):
     duration_minutes: Optional[int] = None
     image_url: Optional[str] = None
     active: Optional[bool] = None
+    category: Optional[str] = None
+    pricing: Optional[str] = None
+    min_hours: Optional[int] = None
+    icon: Optional[str] = None
+
+
+class Profile(BaseModel):
+    name: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    materials_by_us: bool = False
+
+
+class SettingsUpdate(BaseModel):
+    materials_fee: float
+
+
+DEFAULT_MATERIALS_FEE = 10.0
+PAID_STATUSES = ["paid", "confirmed", "in_progress", "completed"]
 
 
 class BookingCreate(BaseModel):
@@ -84,6 +113,8 @@ class BookingCreate(BaseModel):
     customer_email: Optional[str] = None
     consent_accepted: bool = False
     discount_code: Optional[str] = None
+    hours: Optional[int] = None
+    materials_by_us: bool = False
 
 
 class Booking(BaseModel):
@@ -111,6 +142,13 @@ class Booking(BaseModel):
     discount_code: Optional[str] = None
     discount_amount: float = 0.0
     final_price: float = 0.0
+    service_category: Optional[str] = None
+    pricing: str = "hourly"
+    hours: Optional[int] = None
+    hourly_rate: Optional[float] = None
+    materials_by_us: bool = False
+    materials_fee: float = 0.0
+    invoice_number: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -120,6 +158,42 @@ DISCOUNT_CODES: dict = {
     "FREUNDIN2H": {"type": "fixed", "value": 50, "description": "Empfehlungsbonus – 50 € geschenkt"},
     "KUEHL40": {"type": "fixed", "value": 40, "description": "Kühlschrankreinigung gratis (40 €)"},
 }
+
+
+VALID_CATEGORIES = {"Reinigung", "Garten", "Winterdienst", "Dach & PV"}
+BOOKING_SLOTS = {"14:00", "15:00", "16:00", "17:00", "18:00", "19:00"}
+VALID_PRICING = {"hourly", "quote"}
+
+
+def validate_booking_input(p: "BookingCreate"):
+    if len(p.device_id.strip()) < 8:
+        raise HTTPException(status_code=400, detail="Ungültige Geräte-ID")
+    if len(p.customer_name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Bitte geben Sie Ihren Namen an")
+    if len("".join(c for c in p.customer_phone if c.isdigit())) < 6:
+        raise HTTPException(status_code=400, detail="Bitte geben Sie eine gültige Telefonnummer an")
+    if len(p.address.strip()) < 5:
+        raise HTTPException(status_code=400, detail="Bitte geben Sie eine vollständige Adresse an")
+    try:
+        d = datetime.strptime(p.scheduled_date, "%Y-%m-%d").date()
+        datetime.strptime(p.scheduled_time, "%H:%M")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ungültiges Datum oder Uhrzeit")
+    if p.scheduled_time not in BOOKING_SLOTS:
+        raise HTTPException(status_code=400, detail="Bitte wählen Sie eine Uhrzeit zwischen 14:00 und 19:00 Uhr")
+    if d < datetime.now(ZoneInfo("Europe/Vienna")).date():
+        raise HTTPException(status_code=400, detail="Das Datum liegt in der Vergangenheit")
+
+
+def validate_service_fields(data: dict):
+    if "pricing" in data and data["pricing"] not in VALID_PRICING:
+        raise HTTPException(status_code=400, detail="Ungültiges Preismodell")
+    if "category" in data and data["category"] not in VALID_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Ungültige Kategorie")
+    if "price" in data and data["price"] < 0:
+        raise HTTPException(status_code=400, detail="Preis darf nicht negativ sein")
+    if "min_hours" in data and not (0 <= data["min_hours"] <= 12):
+        raise HTTPException(status_code=400, detail="Mindeststunden müssen zwischen 0 und 12 liegen")
 
 
 def apply_discount(code: Optional[str], price: float) -> tuple[str, float, float]:
@@ -167,17 +241,17 @@ def create_token(email: str) -> str:
 
 async def verify_admin(authorization: Optional[str] = Header(None)) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="No autorizado")
+        raise HTTPException(status_code=401, detail="Nicht autorisiert")
     token = authorization.split(" ", 1)[1].strip()
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         if payload.get("role") != "admin":
-            raise HTTPException(status_code=403, detail="No autorizado")
+            raise HTTPException(status_code=403, detail="Nicht autorisiert")
         return payload["sub"]
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
+        raise HTTPException(status_code=401, detail="Sitzung abgelaufen")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise HTTPException(status_code=401, detail="Ungültiges Token")
 
 
 def clean_doc(doc: dict) -> dict:
@@ -217,39 +291,53 @@ async def seed_data():
             logger.info("Admin password rotated from env for email=%s", admin_email)
 
     # Seed services (Cleaning Service Wels packs in EUR - German)
-    SEED_VERSION = "wels_packs_v2_de"
+    SEED_VERSION = "wels_multiservice_v3_de"
     marker = await db.settings.find_one({"key": "seed_version"})
     current = marker["value"] if marker else None
     if current != SEED_VERSION:
         await db.services.delete_many({})
         samples = [
             Service(
-                name="Basis-Paket",
-                description="Wöchentliche Pflege (3 Std.): leichte Reinigung + allgemeine Ordnung. Perfekt für Haushalte, die alles makellos halten möchten.",
-                price=66.0,
-                duration_minutes=180,
+                name="Unterhaltsreinigung",
+                description="Regelmäßige Haushaltsreinigung in Wels und Umgebung: Böden, Küche, Bad, Staubwischen und allgemeine Ordnung. Ideal wöchentlich oder alle zwei Wochen.",
+                price=25.0, min_hours=2, duration_minutes=120,
+                category="Reinigung", pricing="hourly", icon="sparkles",
                 image_url="https://images.pexels.com/photos/5998138/pexels-photo-5998138.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
             ),
             Service(
-                name="Familien-Paket",
-                description="Kinderbetreuung + leichte Reinigung (4-5 Std.). Abholung von der Schule, Jause, Hausaufgabenhilfe und Reinigung der Gemeinschaftsbereiche. Ideal für Nachmittage.",
-                price=112.5,
-                duration_minutes=270,
-                image_url="https://images.unsplash.com/photo-1647381518264-97ff1835026f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwxfHxob3VzZWtlZXBpbmd8ZW58MHx8fHwxNzgzMTY3Mjc5fDA&ixlib=rb-4.1.0&q=85",
-            ),
-            Service(
-                name="Premium-Paket",
-                description="Favorit berufstätiger Familien (5 Std./Tag): Tiefenreinigung mit Dampf, Organisation eines Bereichs, Kinderbetreuung mit Aktivitäten auf Englisch und Zubereitung des Abendessens.",
-                price=120.0,
-                duration_minutes=300,
+                name="Grundreinigung",
+                description="Gründliche Tiefenreinigung für Wohnung oder Haus – perfekt beim Ein- oder Auszug, nach Renovierungen oder als Frühjahrsputz. Inklusive Dampfreinigung.",
+                price=30.0, min_hours=3, duration_minutes=180,
+                category="Reinigung", pricing="hourly", icon="water",
                 image_url="https://images.pexels.com/photos/10557898/pexels-photo-10557898.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
             ),
             Service(
-                name="VIP-Monatspaket",
-                description="20 Wochenstunden nach Ihren Wünschen, mit Prioritätszeiten, detailliertem täglichem Bericht und Notdienst mit 24-Stunden-Vorlauf.",
-                price=2000.0,
-                duration_minutes=1200,
-                image_url="https://images.unsplash.com/photo-1724582586529-62622e50c0b3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxjbGVhbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MHx8fHwxNzgzMTY3Mjc4fDA&ixlib=rb-4.1.0&q=85",
+                name="Fensterreinigung",
+                description="Streifenfreie Reinigung von Fenstern, Rahmen, Fensterbänken und Glastüren – innen und außen.",
+                price=28.0, min_hours=2, duration_minutes=120,
+                category="Reinigung", pricing="hourly", icon="grid",
+                image_url="https://images.unsplash.com/photo-1724582586529-62622e50c0b3?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+            ),
+            Service(
+                name="Gartenpflege",
+                description="Rasenmähen, Heckenschnitt, Unkraut jäten, Laub entfernen und saisonale Gartenarbeiten. Preis nach Besichtigung bzw. Angebot.",
+                price=0.0, min_hours=0, duration_minutes=180,
+                category="Garten", pricing="quote", icon="leaf",
+                image_url="https://images.pexels.com/photos/1301856/pexels-photo-1301856.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+            ),
+            Service(
+                name="Winterdienst & Schneeräumung",
+                description="Zuverlässige Schneeräumung und Streudienst für Gehwege, Einfahrten und Parkplätze – in Wels, Amberg, Gramastetten und Umgebung. Preis auf Anfrage.",
+                price=0.0, min_hours=0, duration_minutes=60,
+                category="Winterdienst", pricing="quote", icon="snow",
+                image_url="https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+            ),
+            Service(
+                name="Dach- & PV-Reinigung",
+                description="Schonende Reinigung von Dachflächen, Dachrinnen und Photovoltaikanlagen für mehr Leistung und längere Lebensdauer. Preis nach Angebot.",
+                price=0.0, min_hours=0, duration_minutes=240,
+                category="Dach & PV", pricing="quote", icon="sunny",
+                image_url="https://images.pexels.com/photos/9875441/pexels-photo-9875441.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
             ),
         ]
         await db.services.insert_many([s.dict() for s in samples])
@@ -304,7 +392,7 @@ async def root():
 @api.get("/services", response_model=List[Service])
 async def list_services(only_active: bool = True):
     q = {"active": True} if only_active else {}
-    docs = await db.services.find(q, {"_id": 0}).sort("price", 1).to_list(200)
+    docs = await db.services.find(q, {"_id": 0}).sort("created_at", 1).to_list(200)
     return docs
 
 
@@ -394,14 +482,38 @@ async def send_booking_notification(booking: dict):
 async def create_booking(payload: BookingCreate):
     svc = await db.services.find_one({"id": payload.service_id}, {"_id": 0})
     if not svc:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+        raise HTTPException(status_code=404, detail="Service nicht gefunden")
     if not payload.consent_accepted:
         raise HTTPException(status_code=400, detail="Datenschutz-Einwilligung ist erforderlich")
+    validate_booking_input(payload)
 
-    price = float(svc["price"])
-    code, discount_amount, final_price = apply_discount(payload.discount_code, price)
+    pricing = svc.get("pricing", "hourly")
+    materials_fee = 0.0
+    hours = None
+    rate = None
+    if pricing == "quote":
+        price, code, discount_amount, final_price = 0.0, "", 0.0, 0.0
+        status = "quote_requested"
+    else:
+        min_h = int(svc.get("min_hours") or 1)
+        hours = int(payload.hours or min_h)
+        if hours < min_h or hours > 12:
+            raise HTTPException(status_code=400, detail=f"Bitte zwischen {min_h} und 12 Stunden wählen")
+        rate = float(svc["price"])
+        if payload.materials_by_us:
+            materials_fee = await get_materials_fee()
+        price = round(rate * hours + materials_fee, 2)
+        code, discount_amount, final_price = apply_discount(payload.discount_code, price)
+        status = "pending_payment"
 
     booking = Booking(
+        status=status,
+        service_category=svc.get("category"),
+        pricing=pricing,
+        hours=hours,
+        hourly_rate=rate,
+        materials_by_us=payload.materials_by_us,
+        materials_fee=materials_fee,
         device_id=payload.device_id,
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
@@ -434,24 +546,24 @@ async def create_booking(payload: BookingCreate):
 async def pay_booking(booking_id: str, payload: PayRequest, x_device_id: Optional[str] = Header(default=None)):
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking:
-        raise HTTPException(status_code=404, detail="Cita no encontrada")
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
     if not x_device_id or booking.get("device_id") != x_device_id:
         raise HTTPException(status_code=403, detail="Zugriff verweigert")
     if booking["status"] != "pending_payment":
-        raise HTTPException(status_code=400, detail="Esta cita ya está pagada")
+        raise HTTPException(status_code=400, detail="Termin ist bereits bezahlt oder nicht zahlbar")
 
     # Basic validation of card fields (MOCK payment - simulates Stripe)
     digits = "".join(c for c in payload.card_number if c.isdigit())
     if len(digits) < 12:
-        raise HTTPException(status_code=400, detail="Número de tarjeta inválido")
+        raise HTTPException(status_code=400, detail="Ungültige Kartennummer")
     if len(payload.cvc) < 3:
-        raise HTTPException(status_code=400, detail="CVC inválido")
+        raise HTTPException(status_code=400, detail="Ungültiger CVC")
     if not payload.card_holder.strip():
-        raise HTTPException(status_code=400, detail="Nombre del titular requerido")
+        raise HTTPException(status_code=400, detail="Karteninhaber erforderlich")
 
     # Simulate declined test card
     if digits.startswith("4000000000000002"):
-        raise HTTPException(status_code=402, detail="Tarjeta rechazada. Intenta con otra.")
+        raise HTTPException(status_code=402, detail="Karte abgelehnt. Bitte andere Karte versuchen.")
 
     now = datetime.now(timezone.utc)
     ref = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
@@ -468,8 +580,207 @@ async def pay_booking(booking_id: str, payload: PayRequest, x_device_id: Optiona
     return clean_doc(updated)
 
 
+async def get_materials_fee() -> float:
+    doc = await db.settings.find_one({"key": "materials_fee"})
+    return float(doc["value"]) if doc else DEFAULT_MATERIALS_FEE
+
+
+@api.get("/settings")
+async def public_settings():
+    return {"materials_fee": await get_materials_fee()}
+
+
+@api.get("/profile", response_model=Profile)
+async def get_profile(x_device_id: Optional[str] = Header(default=None)):
+    if not x_device_id:
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
+    doc = await db.profiles.find_one({"device_id": x_device_id}, {"_id": 0, "device_id": 0})
+    return doc or Profile().dict()
+
+
+@api.put("/profile", response_model=Profile)
+async def save_profile(payload: Profile, x_device_id: Optional[str] = Header(default=None)):
+    if not x_device_id:
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
+    data = {k: (v.strip() if isinstance(v, str) else v) for k, v in payload.dict().items()}
+    await db.profiles.update_one({"device_id": x_device_id}, {"$set": {**data, "device_id": x_device_id}}, upsert=True)
+    return data
+
+
+COMPANY = {
+    "name": "Dennisse Nava Porras",
+    "brand": "Cleaning Service Wels",
+    "address": ["Almgasse 12, Tür 6", "4600 Wels, Österreich"],
+    "uid": "54383/3172",
+    "bank": "Raiffeisenbank",
+    "bic": "RZOAT2L450",
+    "iban": "AT94 3445 0000 0213 9451",
+    "email": "denissenavaporras@gmail.com",
+    "phone": "+43 664 101 9869",
+}
+
+
+def is_invoiceable(b: dict) -> bool:
+    return (
+        b.get("status") in PAID_STATUSES
+        and b.get("pricing") != "quote"
+        and bool(b.get("payment_ref"))
+        and float(b.get("final_price") or 0) > 0
+    )
+
+
+def build_invoice_pdf(b: dict) -> bytes:
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors as rl
+    from reportlab.pdfgen import canvas
+
+    blue = rl.HexColor("#1572C4")
+    green = rl.HexColor("#8DC63F")
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    w, h = A4
+    left = 20 * mm
+    right = w - 20 * mm
+
+    c.setFillColor(blue)
+    c.rect(0, h - 8 * mm, w, 8 * mm, fill=1, stroke=0)
+    c.setFillColor(green)
+    c.rect(0, h - 10 * mm, w, 2 * mm, fill=1, stroke=0)
+
+    y = h - 28 * mm
+    c.setFillColor(blue)
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(left, y, COMPANY["brand"])
+    c.setFont("Helvetica", 9)
+    c.setFillColor(rl.HexColor("#333333"))
+    lines = [COMPANY["name"], *COMPANY["address"], f"UID: {COMPANY['uid']}", COMPANY["phone"], COMPANY["email"]]
+    yy = y
+    for ln in lines:
+        c.drawRightString(right, yy, ln)
+        yy -= 4.5 * mm
+
+    y = h - 70 * mm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left, y, "Rechnung an:")
+    c.setFont("Helvetica", 10)
+    for i, ln in enumerate([b.get("customer_name", ""), *str(b.get("address", "")).split("\n"), b.get("customer_phone", "")]):
+        c.drawString(left, y - (i + 1) * 5 * mm, ln[:80])
+
+    paid_at = b.get("paid_at") or b.get("created_at")
+    if isinstance(paid_at, str):
+        try:
+            paid_at = datetime.fromisoformat(paid_at)
+        except ValueError:
+            paid_at = None
+    inv_date = (paid_at or datetime.now(timezone.utc)).strftime("%d.%m.%Y")
+    sched = b.get("scheduled_date", "")
+    try:
+        sched = datetime.strptime(sched, "%Y-%m-%d").strftime("%d.%m.%Y")
+    except ValueError:
+        pass
+
+    c.setFont("Helvetica-Bold", 16)
+    c.setFillColor(blue)
+    c.drawString(left, y - 30 * mm, "RECHNUNG")
+    c.setFillColor(rl.HexColor("#333333"))
+    c.setFont("Helvetica", 10)
+    meta = [
+        ("Rechnungsnummer:", b.get("invoice_number", "")),
+        ("Rechnungsdatum:", inv_date),
+        ("Leistungsdatum:", f"{sched} um {b.get('scheduled_time', '')} Uhr"),
+        ("Zahlungsreferenz:", b.get("payment_ref") or "—"),
+    ]
+    my = y - 38 * mm
+    for k, v in meta:
+        c.drawString(left, my, k)
+        c.drawString(left + 40 * mm, my, str(v))
+        my -= 5 * mm
+
+    # table
+    ty = my - 8 * mm
+    c.setFillColor(rl.HexColor("#EAF3FB"))
+    c.rect(left, ty - 2 * mm, right - left, 8 * mm, fill=1, stroke=0)
+    c.setFillColor(rl.HexColor("#0E2A44"))
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 2 * mm, ty, "Leistung")
+    c.drawRightString(right - 50 * mm, ty, "Menge")
+    c.drawRightString(right - 25 * mm, ty, "Einzelpreis")
+    c.drawRightString(right - 2 * mm, ty, "Betrag")
+    c.setFont("Helvetica", 10)
+    rows = []
+    hours = b.get("hours")
+    rate = b.get("hourly_rate")
+    if hours and rate:
+        rows.append((b.get("service_name", ""), f"{hours} Std.", rate, hours * rate))
+    else:
+        rows.append((b.get("service_name", ""), "1", b.get("service_price", 0), b.get("service_price", 0)))
+    if b.get("materials_fee"):
+        rows.append(("Reinigungsmaterial (von uns mitgebracht)", "1", b["materials_fee"], b["materials_fee"]))
+    if b.get("discount_amount"):
+        rows.append((f"Rabatt ({b.get('discount_code', '')})", "", None, -b["discount_amount"]))
+    ry = ty - 9 * mm
+    for name, qty, unit, amt in rows:
+        c.drawString(left + 2 * mm, ry, str(name)[:60])
+        c.drawRightString(right - 50 * mm, ry, qty)
+        c.drawRightString(right - 25 * mm, ry, f"€ {unit:.2f}" if unit is not None else "")
+        c.drawRightString(right - 2 * mm, ry, f"€ {amt:.2f}")
+        ry -= 7 * mm
+    c.setStrokeColor(rl.HexColor("#B9C7D6"))
+    c.line(left, ry + 3 * mm, right, ry + 3 * mm)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(right - 70 * mm, ry - 4 * mm, "Gesamtbetrag:")
+    c.setFillColor(blue)
+    c.drawRightString(right - 2 * mm, ry - 4 * mm, f"€ {float(b.get('final_price') or 0):.2f}")
+    c.setFillColor(rl.HexColor("#333333"))
+    c.setFont("Helvetica", 9)
+    c.drawString(left, ry - 14 * mm, "Der Betrag wurde online beglichen. Vielen Dank für Ihr Vertrauen!")
+
+    # footer
+    c.setStrokeColor(green)
+    c.setLineWidth(1.5)
+    c.line(left, 30 * mm, right, 30 * mm)
+    c.setFont("Helvetica", 8)
+    c.drawString(left, 24 * mm, f"{COMPANY['name']} · {COMPANY['address'][0]}, {COMPANY['address'][1]} · UID: {COMPANY['uid']}")
+    c.drawString(left, 19 * mm, f"Bankverbindung: {COMPANY['bank']} · IBAN: {COMPANY['iban']} · BIC: {COMPANY['bic']}")
+    c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+@api.get("/bookings/{booking_id}/invoice")
+async def booking_invoice(booking_id: str, device_id: Optional[str] = None, x_device_id: Optional[str] = Header(default=None)):
+    from fastapi.responses import Response
+    dev = x_device_id or device_id
+    doc = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    if not dev or doc.get("device_id") != dev:
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
+    if not is_invoiceable(doc):
+        raise HTTPException(status_code=400, detail="Rechnung erst nach Zahlung verfügbar")
+    if not doc.get("invoice_number"):
+        counter = await db.settings.find_one_and_update(
+            {"key": "invoice_counter"}, {"$inc": {"value": 1}}, upsert=True, return_document=True,
+        )
+        paid_at = doc.get("paid_at")
+        year = paid_at.year if isinstance(paid_at, datetime) else datetime.now(timezone.utc).year
+        number = f"RE-{year}-{int(counter['value']):04d}"
+        await db.bookings.update_one({"id": booking_id, "invoice_number": None}, {"$set": {"invoice_number": number}})
+        doc = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    pdf = build_invoice_pdf(doc)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="Rechnung-{doc["invoice_number"]}.pdf"'},
+    )
+
+
 @api.get("/bookings/customer/{device_id}", response_model=List[Booking])
-async def customer_bookings(device_id: str):
+async def customer_bookings(device_id: str, x_device_id: Optional[str] = Header(default=None)):
+    if x_device_id != device_id:
+        raise HTTPException(status_code=403, detail="Zugriff verweigert")
     docs = await db.bookings.find({"device_id": device_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return [clean_doc(d) for d in docs]
 
@@ -478,7 +789,7 @@ async def customer_bookings(device_id: str):
 async def get_booking(booking_id: str, x_device_id: Optional[str] = Header(default=None), authorization: Optional[str] = Header(default=None)):
     doc = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not doc:
-        raise HTTPException(status_code=404, detail="Cita no encontrada")
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
     # Allow if admin JWT is valid OR if the request comes from the booking's device
     is_admin = False
     if authorization and authorization.lower().startswith("bearer "):
@@ -499,7 +810,7 @@ async def admin_login(payload: AdminLogin, request: Request):
     _check_login_rate(_client_ip(request))
     admin = await db.admins.find_one({"email": payload.email.lower().strip()})
     if not admin or not pwd_context.verify(payload.password, admin["password_hash"]):
-        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
     token = create_token(admin["email"])
     return {"access_token": token, "token_type": "bearer", "email": admin["email"]}
 
@@ -540,18 +851,29 @@ async def admin_stats(_: str = Depends(verify_admin)):
 
 @api.patch("/admin/bookings/{booking_id}/status", response_model=Booking)
 async def update_status(booking_id: str, payload: StatusUpdate, _: str = Depends(verify_admin)):
-    allowed = {"pending_payment", "paid", "confirmed", "in_progress", "completed", "cancelled"}
+    allowed = {"quote_requested", "pending_payment", "paid", "confirmed", "in_progress", "completed", "cancelled"}
     if payload.status not in allowed:
-        raise HTTPException(status_code=400, detail="Estado inválido")
+        raise HTTPException(status_code=400, detail="Ungültiger Status")
     result = await db.bookings.update_one({"id": booking_id}, {"$set": {"status": payload.status}})
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Cita no encontrada")
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
     doc = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     return clean_doc(doc)
 
 
+@api.put("/admin/settings")
+async def update_settings(payload: SettingsUpdate, _: str = Depends(verify_admin)):
+    if payload.materials_fee < 0 or payload.materials_fee > 500:
+        raise HTTPException(status_code=400, detail="Ungültiger Betrag")
+    await db.settings.update_one(
+        {"key": "materials_fee"}, {"$set": {"key": "materials_fee", "value": float(payload.materials_fee)}}, upsert=True,
+    )
+    return {"materials_fee": float(payload.materials_fee)}
+
+
 @api.post("/admin/services", response_model=Service)
 async def create_service(payload: ServiceCreate, _: str = Depends(verify_admin)):
+    validate_service_fields(payload.dict())
     svc = Service(**payload.dict())
     await db.services.insert_one(svc.dict())
     return svc
@@ -559,17 +881,18 @@ async def create_service(payload: ServiceCreate, _: str = Depends(verify_admin))
 
 @api.get("/admin/services", response_model=List[Service])
 async def admin_list_services(_: str = Depends(verify_admin)):
-    docs = await db.services.find({}, {"_id": 0}).sort("price", 1).to_list(200)
+    docs = await db.services.find({}, {"_id": 0}).sort("created_at", 1).to_list(200)
     return docs
 
 
 @api.patch("/admin/services/{service_id}", response_model=Service)
 async def update_service(service_id: str, payload: ServiceUpdate, _: str = Depends(verify_admin)):
     updates = {k: v for k, v in payload.dict().items() if v is not None}
+    validate_service_fields(updates)
     if updates:
         result = await db.services.update_one({"id": service_id}, {"$set": updates})
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Servicio no encontrado")
+            raise HTTPException(status_code=404, detail="Service nicht gefunden")
     doc = await db.services.find_one({"id": service_id}, {"_id": 0})
     return clean_doc(doc)
 
@@ -578,7 +901,7 @@ async def update_service(service_id: str, payload: ServiceUpdate, _: str = Depen
 async def delete_service(service_id: str, _: str = Depends(verify_admin)):
     result = await db.services.delete_one({"id": service_id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+        raise HTTPException(status_code=404, detail="Service nicht gefunden")
     return {"ok": True}
 
 

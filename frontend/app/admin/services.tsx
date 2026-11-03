@@ -20,9 +20,23 @@ type Form = {
   duration_minutes: string;
   image_url: string;
   active: boolean;
+  category: string;
+  pricing: "hourly" | "quote";
+  min_hours: string;
+  icon: string;
 };
 
-const EMPTY: Form = { name: "", description: "", price: "", duration_minutes: "120", image_url: "", active: true };
+const EMPTY: Form = {
+  name: "", description: "", price: "", duration_minutes: "120", image_url: "", active: true,
+  category: "Reinigung", pricing: "hourly", min_hours: "2", icon: "sparkles",
+};
+
+const CATEGORY_ICON: Record<string, string> = {
+  Reinigung: "sparkles",
+  Garten: "leaf",
+  Winterdienst: "snow",
+  "Dach & PV": "sunny",
+};
 
 export default function AdminServices() {
   const router = useRouter();
@@ -33,13 +47,16 @@ export default function AdminServices() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fee, setFee] = useState("");
+  const [feeMsg, setFeeMsg] = useState("");
 
   const load = useCallback(async () => {
     try {
       const token = await storage.secureGet<string>("admin_token", "");
       if (!token) return router.replace("/admin/login");
-      const r = await api.adminListServices();
+      const [r, st] = await Promise.all([api.adminListServices(), api.settings()]);
       setItems(r);
+      setFee(String(st.materials_fee));
     } finally {
       setLoading(false);
     }
@@ -56,6 +73,10 @@ export default function AdminServices() {
       duration_minutes: String(s.duration_minutes),
       image_url: s.image_url || "",
       active: s.active,
+      category: s.category || "Reinigung",
+      pricing: s.pricing || "hourly",
+      min_hours: String(s.min_hours ?? 2),
+      icon: s.icon || "sparkles",
     });
     setShowForm(true);
   }
@@ -71,10 +92,14 @@ export default function AdminServices() {
       const payload = {
         name: form.name.trim(),
         description: form.description.trim(),
-        price: parseFloat(form.price),
-        duration_minutes: parseInt(form.duration_minutes, 10),
+        price: form.pricing === "quote" ? 0 : parseFloat(form.price),
+        duration_minutes: parseInt(form.duration_minutes, 10) || 120,
         image_url: form.image_url.trim() || undefined,
         active: form.active,
+        category: form.category,
+        pricing: form.pricing,
+        min_hours: form.pricing === "quote" ? 0 : parseInt(form.min_hours, 10) || 1,
+        icon: CATEGORY_ICON[form.category] || "sparkles",
       };
       if (!payload.name || !payload.description || Number.isNaN(payload.price)) {
         throw new Error("Bitte alle Pflichtfelder ausfüllen");
@@ -89,6 +114,18 @@ export default function AdminServices() {
       setError(e.message || "Fehler beim Speichern");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveFee() {
+    setFeeMsg("");
+    try {
+      const v = parseFloat(fee.replace(",", "."));
+      if (Number.isNaN(v)) throw new Error("Ungültiger Betrag");
+      await api.updateSettings(v);
+      setFeeMsg("Gespeichert");
+    } catch (e: any) {
+      setFeeMsg(e.message || "Fehler");
     }
   }
 
@@ -114,7 +151,24 @@ export default function AdminServices() {
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.brandPrimary} /></View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.feeCard}>
+            <Text style={styles.cardName}>Materialaufpreis (pro Buchung, EUR)</Text>
+            <Text style={styles.cardDesc}>Wird berechnet, wenn der Kunde „Wir bringen das Material mit“ wählt.</Text>
+            <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
+              <TextInput
+                testID="materials-fee-input"
+                value={fee}
+                onChangeText={(v) => setFee(v.replace(/[^0-9.,]/g, ""))}
+                keyboardType="decimal-pad"
+                style={[styles.input, { flex: 1 }]}
+              />
+              <Pressable testID="materials-fee-save" onPress={saveFee} style={styles.feeBtn}>
+                <Text style={styles.saveBtnTxt}>Speichern</Text>
+              </Pressable>
+            </View>
+            {feeMsg ? <Text style={styles.cardMeta}>{feeMsg}</Text> : null}
+          </View>
           {items.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="pricetags-outline" size={40} color={colors.brandPrimary} />
@@ -134,8 +188,8 @@ export default function AdminServices() {
                 </View>
                 <Text style={styles.cardDesc} numberOfLines={2}>{s.description}</Text>
                 <View style={{ flexDirection: "row", gap: spacing.md, marginTop: 4 }}>
-                  <Text style={styles.cardPrice}>€{s.price.toFixed(0)}</Text>
-                  <Text style={styles.cardMeta}>{s.duration_minutes} Min.</Text>
+                  <Text style={styles.cardPrice}>{s.pricing === "quote" ? "Angebot" : `€${s.price.toFixed(0)}/Std.`}</Text>
+                  <Text style={styles.cardMeta}>{s.category}{s.pricing === "quote" ? "" : ` · ab ${s.min_hours} Std.`}</Text>
                 </View>
                 <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
                   <Pressable testID={`edit-${s.id}`} onPress={() => edit(s)} style={styles.smallBtn}>
@@ -179,32 +233,50 @@ export default function AdminServices() {
                 style={[styles.input, { height: 80 }]}
                 multiline
               />
-              <View style={{ flexDirection: "row", gap: spacing.md }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Preis (EUR)</Text>
-                  <TextInput
-                    testID="form-price"
-                    value={form.price}
-                    onChangeText={(v) => setForm({ ...form, price: v.replace(/[^0-9.]/g, "") })}
-                    placeholder="45"
-                    placeholderTextColor={colors.info}
-                    keyboardType="decimal-pad"
-                    style={styles.input}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Dauer (Min.)</Text>
-                  <TextInput
-                    testID="form-duration"
-                    value={form.duration_minutes}
-                    onChangeText={(v) => setForm({ ...form, duration_minutes: v.replace(/\D/g, "") })}
-                    placeholder="120"
-                    placeholderTextColor={colors.info}
-                    keyboardType="number-pad"
-                    style={styles.input}
-                  />
-                </View>
+              <Text style={styles.inputLabel}>Kategorie</Text>
+              <View style={styles.chipRow}>
+                {Object.keys(CATEGORY_ICON).map((c) => (
+                  <Pressable key={c} testID={`form-cat-${c}`} onPress={() => setForm({ ...form, category: c })} style={[styles.chip, form.category === c && styles.chipOn]}>
+                    <Text style={[styles.chipTxt, form.category === c && { color: colors.onBrandPrimary }]}>{c}</Text>
+                  </Pressable>
+                ))}
               </View>
+              <Text style={styles.inputLabel}>Preismodell</Text>
+              <View style={styles.chipRow}>
+                {([["hourly", "Stundensatz"], ["quote", "Auf Anfrage"]] as const).map(([k, l]) => (
+                  <Pressable key={k} testID={`form-pricing-${k}`} onPress={() => setForm({ ...form, pricing: k })} style={[styles.chip, form.pricing === k && styles.chipOn]}>
+                    <Text style={[styles.chipTxt, form.pricing === k && { color: colors.onBrandPrimary }]}>{l}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {form.pricing === "hourly" && (
+                <View style={{ flexDirection: "row", gap: spacing.md }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Preis pro Std. (EUR)</Text>
+                    <TextInput
+                      testID="form-price"
+                      value={form.price}
+                      onChangeText={(v) => setForm({ ...form, price: v.replace(/[^0-9.]/g, "") })}
+                      placeholder="25"
+                      placeholderTextColor={colors.info}
+                      keyboardType="decimal-pad"
+                      style={styles.input}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Mindeststunden</Text>
+                    <TextInput
+                      testID="form-min-hours"
+                      value={form.min_hours}
+                      onChangeText={(v) => setForm({ ...form, min_hours: v.replace(/\D/g, "") })}
+                      placeholder="2"
+                      placeholderTextColor={colors.info}
+                      keyboardType="number-pad"
+                      style={styles.input}
+                    />
+                  </View>
+                </View>
+              )}
               <Text style={styles.inputLabel}>Bild-URL</Text>
               <TextInput
                 testID="form-image"
@@ -288,6 +360,12 @@ const styles = StyleSheet.create({
   toggleOn: { backgroundColor: colors.brandTertiary },
   toggleTxt: { fontSize: typography.sizes.base, color: colors.onSurface, fontWeight: "600" },
   error: { color: colors.error, marginTop: spacing.md, textAlign: "center" },
+  feeCard: { backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
+  feeBtn: { backgroundColor: colors.brandPrimary, borderRadius: radius.md, paddingHorizontal: spacing.lg, justifyContent: "center" },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.md, minHeight: 40, justifyContent: "center", borderRadius: radius.pill, backgroundColor: colors.surfaceTertiary },
+  chipOn: { backgroundColor: colors.brandPrimary },
+  chipTxt: { fontWeight: "600", color: colors.onSurface },
   saveBtn: { backgroundColor: colors.brandPrimary, paddingVertical: 14, borderRadius: radius.pill, alignItems: "center", marginTop: spacing.lg },
   saveBtnTxt: { color: colors.onBrandPrimary, fontWeight: "800", fontSize: typography.sizes.base },
   cancelBtn: { paddingVertical: 12, alignItems: "center", marginTop: spacing.sm },

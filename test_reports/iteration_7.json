@@ -1,0 +1,52 @@
+{
+  "summary": "Tested the new multi-service pivot (Cleaning Service Wels, German UI) end to end. Backend: 25/25 pytest checks pass. They cover services (6), settings, hourly pricing with materials and discount, the min/max hours check, quote bookings, MOCK pay, the PDF invoice (RE-YYYY-NNNN, number stays the same on repeat calls, company/IBAN data correct), profile, and admin settings/services CRUD/status. Frontend at 390x844: these flows work: onboarding (Weiter x3 -> Los geht's, Überspringen, revisiting / goes to /home), the 4 tabs, the WhatsApp FAB hidden only on Buchen, the greeting and promo banner, category tiles -> filtered Services, filters, detail -> Buchen with the service preselected, the 3-step hourly booking (hours +/- limited to min..12, materials +€10, WILLKOMMEN10, consent gate) -> checkout (4242 success, 4000..0002 declined message in German) -> success with invoice download (opens a popup), the quote booking -> 'Anfrage gesendet!', profile saving after reload, the materials toggle saving, the profile data filled in on Buchen step 3, history with pay/invoice buttons, the Rechnungen tab, the info/faq/privacy/admin links, the admin agenda label 'Angebot angefr.', and the admin materials fee editor (changed to 12 and set back to 10). Issues found: the pay button shows a rounded amount, a confirmed quote gets a €0 'already paid' invoice, the backend has no validation of the booking date/time/required fields, and backend error texts are in Spanish. Deprecated packages: none found (no expo-av, expo-barcode-scanner or expo-background-fetch). SafeAreaView comes from react-native-safe-area-context, which is correct.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/bookings/{id}/invoice", "issue": "PAID_STATUSES includes 'confirmed'. When the admin confirms a quote_requested booking (NEXT_STATUS quote_requested->confirmed), the endpoint creates an invoice of €0.00 with an invoice number and the text 'Der Betrag wurde online beglichen'. The booking also shows up in the customer's Rechnungen tab. Fix: only allow invoices for pricing=='hourly' with payment_ref/paid_at set, or for final_price>0. Verified: 200 application/pdf RE-2026-0006 for a confirmed quote."},
+      {"endpoint": "POST /api/bookings", "issue": "No validation of the input. It accepts past dates (2020-01-01), invalid times (99:99) and empty device_id/customer_name/customer_phone/address (returns 200). Add Pydantic constraints (min_length, date >= today, HH:MM inside allowed slots)."},
+      {"endpoint": "POST/PATCH /api/admin/services", "issue": "Accepts a negative price, pricing='weird' and category='Foo' (200). Validate with Literal['hourly','quote'] and the allowed categories, and require price>=0. min_hours can be above 12, which makes the service impossible to book."},
+      {"endpoint": "multiple", "issue": "Error messages are still in Spanish although the UI is fully German: 'Servicio no encontrado', 'Cita no encontrada', 'Esta cita ya está pagada' (also returned when paying a quote booking), 'Número de tarjeta inválido', 'CVC inválido', 'Nombre del titular requerido', 'Tarjeta rechazada', 'Credenciales inválidas', 'No autorizado', 'Token inválido/expirado', 'Estado inválido'."},
+      {"endpoint": "GET /api/bookings/{id}/invoice", "issue": "The invoice year comes from the current date, not from paid_at. The invoice_counter is global and never resets per year. The PDF has no VAT/USt line and no Kleinunternehmer note (§6 Abs 1 Z 27 UStG), which Austrian invoices need. '54383/3172' looks like a Steuernummer, not a UID (ATU...)."},
+      {"endpoint": "GET /api/bookings/customer/{device_id}", "issue": "No X-Device-Id header check (the id sits in the path), which is not consistent with the other device-protected endpoints. The invoice URL also puts device_id in the query string."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Checkout pay button", "issue": "Uses toFixed(0): shows '€77 bezahlen & bestätigen' while the total is €76.50. Reference: app/checkout.tsx:240", "testID": "pay-now-btn", "priority": "MEDIUM"},
+      {"component": "Admin agenda card price / stats", "issue": "toFixed(0) shows €77 for 76.50. Reference: app/admin/index.tsx:149,210", "testID": "admin-booking-*", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Book screen initial load", "issue": "Promise.all([listServices, settings, getProfile]) has no catch. If any call fails, the service list stays empty and no error is shown. Reference: app/(tabs)/book.tsx:64-80", "affected_testIDs": ["book-service-*"]}
+    ],
+    "design_issues": [
+      {"screen": "Tabs (Home/Profile/Services)", "issues": ["While scrolling, the WhatsApp FAB covers interactive content: the 'Rechnungen' segment tab, the price and chevron of invoice rows, and part of the Home 'Dach & PV' tile. Content stays reachable at the end of the scroll (paddingBottom 120)."]},
+      {"screen": "Onboarding", "issues": ["The slides are text only, which leaves a large empty white area. Consider adding an illustration, icon or the logo per slide."]},
+      {"screen": "Buchen step 1", "issues": ["materials-switch is 40x20px. Make the whole row pressable or meet the 44pt touch target."]},
+      {"screen": "Success (quote)", "issues": ["The primary CTA 'Route in Maps anzeigen' does not fit the customer's situation, since it is their own address."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_multiservice_v7.py", "/app/test_reports/pytest/pytest_results_v7.xml"],
+  "action_items": [
+    "Change the checkout pay button (and the admin card/stat prices) to toFixed(2) or euro() so the paid amount matches the total exactly",
+    "Block invoices for quote bookings, or for bookings without payment_ref/final_price>0, so confirming a quote does not create a €0 'paid' invoice or show it under Rechnungen",
+    "Add Pydantic validation on BookingCreate (non-empty name/phone/address/device_id, date not in the past, valid time slot) and on ServiceCreate/Update (pricing Literal, allowed categories, price>=0, min_hours<=12)",
+    "Translate the remaining Spanish HTTPException details to German",
+    "Invoice PDF: add a USt line or Kleinunternehmer note and check the UID/Steuernummer label; take the invoice year from paid_at",
+    "Add a catch/error state on the book.tsx initial load",
+    "Fix the WhatsApp FAB overlapping list content on the Profile/Home tabs"
+  ],
+  "critical_code_review_comments": [
+    "server.py has 864 lines (>700). Split it into routers (bookings, admin, invoice/pdf, profile).",
+    "A booking with a scheduled_date in the past passes without any check.",
+    "send_booking_notification is skipped because SendGrid is not configured (by design)."
+  ],
+  "updated_files": ["/app/backend/tests/test_multiservice_v7.py"],
+  "success_rate": {"backend": "100% (25/25 pytest)", "frontend": "~95% (all requested flows pass; pay-button rounding display bug)"},
+  "seed_data_creation": "Test bookings/profiles with prefix TEST were created and then removed from MongoDB (35 bookings, 4 profiles). materials_fee was set back to 10.0.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: export EXPO_PUBLIC_BACKEND_URL from frontend/.env; pytest backend/tests/test_multiservice_v7.py. The frontend .env key is EXPO_PUBLIC_BACKEND_URL. On web the device id is in localStorage key 'device_id' (JSON string) and the onboarding flag in 'onboarded'. Admin login is rate-limited to 5/min/IP. The container date is Nov 2026.",
+  "rca_of_issue": "Pay button: checkout.tsx:240 formats with toFixed(0). €0 quote invoice: the invoice endpoint gates only on status in PAID_STATUSES, and the admin NEXT_STATUS maps quote_requested->confirmed, which is in PAID_STATUSES."
+}

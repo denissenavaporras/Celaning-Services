@@ -10,13 +10,14 @@ export const colors = {
   surfaceInverse: "#0E2A44",
   onSurfaceInverse: "#FFFFFF",
 
-  // Deep royal blue (from spray bottle / broom body)
-  brand: "#1A4FB0",
-  brandPrimary: "#1A4FB0",
+  // Logo blue (wordmark, spray bottle, broom)
+  brand: "#1572C4",
+  brandPrimary: "#1572C4",
+  brandDeep: "#0D4F8C",
   onBrandPrimary: "#FFFFFF",
 
   // Bright cyan (from "Cleaning" wordmark)
-  brandAccent: "#009EE0",
+  brandAccent: "#2B8FE0",
   onBrandAccent: "#FFFFFF",
 
   // Vibrant lime green (from swoosh)
@@ -26,7 +27,7 @@ export const colors = {
   brandSecondary: "#D6E7FA",
   onBrandSecondary: "#0E2A44",
   brandTertiary: "#EAF3FB",
-  onBrandTertiary: "#1A4FB0",
+  onBrandTertiary: "#0D4F8C",
 
   success: "#8DC63F",
   onSuccess: "#FFFFFF",
@@ -37,6 +38,9 @@ export const colors = {
   border: "#DDE7F0",
   borderStrong: "#B9C7D6",
   divider: "#EDF2F7",
+  greenTint: "#EEF7E2",
+  onGreenTint: "#4E7A17",
+  whatsapp: "#25D366",
 };
 
 export const spacing = {

@@ -27,6 +27,7 @@ function getNextDays(count: number) {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  quote_requested: { label: "Angebot angefr.", color: colors.onGreenTint, bg: colors.greenTint },
   pending_payment: { label: "Zahlung ausst.", color: colors.warning, bg: "#FFF3E0" },
   paid: { label: "Bezahlt", color: colors.brandPrimary, bg: colors.brandSecondary },
   confirmed: { label: "Bestätigt", color: colors.brandPrimary, bg: colors.brandSecondary },
@@ -36,12 +37,14 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
 };
 
 const NEXT_STATUS: Record<string, string> = {
+  quote_requested: "confirmed",
   paid: "confirmed",
   confirmed: "in_progress",
   in_progress: "completed",
 };
 
 const STATUS_ACTION: Record<string, string> = {
+  quote_requested: "Bestätigen",
   paid: "Bestätigen",
   confirmed: "Starten",
   in_progress: "Abschließen",
@@ -143,7 +146,7 @@ export default function AdminAgenda() {
               <Text style={styles.statLabel}>Gesamt</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNum}>€{stats.revenue.toFixed(0)}</Text>
+              <Text style={styles.statNum}>€{stats.revenue.toFixed(2)}</Text>
               <Text style={styles.statLabel}>Umsatz</Text>
             </View>
           </View>
@@ -204,7 +207,7 @@ export default function AdminAgenda() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardName}>{b.customer_name}</Text>
-                    <Text style={styles.cardMeta}>{b.service_name} · €{(b.final_price ?? b.service_price).toFixed(0)}{b.discount_code ? `  🎁 ${b.discount_code}` : ""}</Text>
+                    <Text style={styles.cardMeta}>{b.service_name} · {b.pricing === "quote" ? "Angebot" : `€${(b.final_price ?? b.service_price).toFixed(2)}`}{b.discount_code ? `  🎁 ${b.discount_code}` : ""}</Text>
                     <Text style={styles.cardMeta} numberOfLines={1}>
                       <Ionicons name="call-outline" size={11} /> {b.customer_phone}
                     </Text>

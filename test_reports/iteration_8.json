@@ -1,0 +1,38 @@
+{
+  "summary": "Retest of the iteration-7 fixes. Backend: 20/20 new pytest checks pass (test_fixes_v8.py). The 25/25 v7 regression checks also pass after updating that test, which used a past date (2026-03-10) and called the customer list without the X-Device-Id header. All 4 fixes are verified. (1) Checkout pay button reads '€76.50 bezahlen & bestätigen', and admin cards and the revenue stat use 2 decimals (€422.00). (2) A confirmed quote returns 400 'Rechnung erst nach Zahlung verfügbar' from /invoice and gets no invoice_number. A booking the admin set to 'paid' without a payment_ref also returns 400. In the UI the Rechnungen tab shows (1) with only the paid hourly booking, the quote history row has no PDF button, and the success screen has no download button for the quote. (3) Booking validation rejects past dates, 99:99, 2026-13-45, an empty name, phone or address, and a short device_id with 400 and German messages. Admin service create/patch rejects a negative price, an invalid pricing or category, and min_hours>12. (4) All tested error messages are German, and checkout shows the backend's 'Karte abgelehnt. Bitte andere Karte versuchen.' as is. /bookings/customer/{id} returns 403 without the header or with a different one. The frontend sends the header, and Home next booking and Profile history load (200). The Buchen retry screen appears when /api/services fails, and 'Erneut versuchen' recovers (6 services). Full UI regression at 390x844 passes: hourly 3h + materials + WILLKOMMEN10 = €76.50 -> declined card -> 4242 success -> invoice button; quote -> 'Anfrage gesendet!' + WhatsApp button. Only new minor issue: a quote shows '€0.00' once the admin confirms it. Deprecated packages: none found. SafeAreaView comes from react-native-safe-area-context, which is correct.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/bookings", "issue": "scheduled_time is only format-checked (HH:MM), so off-slot times such as 03:00 are accepted. The 'past date' check compares against the UTC date, not Europe/Vienna, so for 1-2 h after midnight local time the backend still treats the previous day as 'today'. Missing or malformed fields return a Pydantic 422 with English text."},
+      {"endpoint": "GET /api/bookings/{id}/invoice", "issue": "Still open from iteration 7 and intentionally deferred: there is no USt/Kleinunternehmer note, and the 'UID' label shows a Steuernummer."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Success screen for a confirmed quote", "issue": "After the admin moves a quote to 'confirmed', isQuote (status==='quote_requested') becomes false. The screen then shows the price '€0.00' and 'Termin bestätigt!' instead of 'Angebot'. Use booking.pricing==='quote' for the price label. Reference: app/success.tsx:49,88", "testID": "success-title", "priority": "LOW"},
+      {"component": "Admin agenda card for quotes", "issue": "Quote bookings show 'Gartenpflege · €0.00' (and 'Winterdienst · €0.00'). Show 'Angebot' when pricing==='quote'. Reference: app/admin/index.tsx:210", "testID": "admin-booking-*", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Checkout", "issues": ["The error text sits at the bottom of the ScrollView. When the discount and materials rows are present, it ends up below the fold or behind the sticky pay bar (the info box was already cut off), so the user may not see the decline message. Show the error near the pay button or scroll to it."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_fixes_v8.py", "/app/backend/tests/test_multiservice_v7.py", "/app/backend/tests/ui_seed_helper_v8.py", "/app/test_reports/pytest/pytest_results_v8.xml"],
+  "action_items": [
+    "success.tsx: decide the price label from pricing==='quote' rather than from status, so a confirmed quote does not show €0.00",
+    "admin/index.tsx:210: show 'Angebot' instead of €0.00 for quote bookings",
+    "checkout.tsx: move the error text next to the sticky pay button, or scroll to it, so a declined card is always visible",
+    "Optional: check scheduled_time against the allowed slots, compare the date in Europe/Vienna, and add a German handler for 422 validation errors"
+  ],
+  "critical_code_review_comments": [
+    "server.py has 913 lines (>700). Split it into routers.",
+    "The invoice endpoint still accepts device_id as a query param (needed for opening the PDF in the browser), so the device id leaks into URLs and logs."
+  ],
+  "updated_files": ["/app/backend/tests/test_fixes_v8.py (new)", "/app/backend/tests/ui_seed_helper_v8.py (new)", "/app/backend/tests/test_multiservice_v7.py (dynamic future date + X-Device-Id header)"],
+  "success_rate": {"backend": "100% (20/20 new + 25/25 regression)", "frontend": "~95% (all requested fixes verified; minor €0.00 label on confirmed quote)"},
+  "seed_data_creation": "Test bookings and profiles (device_id prefix TEST_ / uitest8-) were created and then deleted (10 bookings, 3 profiles). materials_fee is confirmed at 10.0. The 3 pre-existing bookings (Max, E2E Cust) were left untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "export EXPO_PUBLIC_BACKEND_URL from frontend/.env; pytest backend/tests/test_fixes_v8.py backend/tests/test_multiservice_v7.py. Container date is Nov 2026, so use dynamic future dates. On web, set localStorage device_id (JSON string) + onboarded='true' via add_init_script. Admin login is limited to 5/min."
+}

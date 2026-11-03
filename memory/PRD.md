@@ -1,42 +1,34 @@
-# Cleaning Service Wels — PRD
+# Cleaning Service Wels — PRD (v3 Multi-Service)
 
-Mobile + Web app (Expo React Native) for Dennisse Nava Porras — Reinigungs- + Kinderbetreuungsservice in Wels, Österreich.
+Expo (React Native) + FastAPI + MongoDB app for Dennisse Nava Porras, Wels (Österreich). UI fully in German; user talks Spanish.
 
-## Users
-- **Customer**: no login (device_id via AsyncStorage). Language: German.
-- **Admin (Dennisse)**: single account `admin@limpia.com / admin123`, JWT-authenticated.
+## Navigation
+- `/` Onboarding (3 slides, shown once; AsyncStorage `onboarded`) → `/home`
+- Bottom tabs `(tabs)`: Home · Services · Buchen · Profil + floating WhatsApp button (+43 664 101 9869, hidden on Buchen)
+- Stack screens: `/service/[id]`, `/checkout`, `/success`, `/info`, `/faq`, `/privacy`, `/admin/*`
 
-## Availability
-- Mo–So · 14:00–19:00 Uhr (letzte Buchung 19:00). Reflected on Home hero, /book banner + time slots (`["14:00","15:00","16:00","17:00","18:00","19:00"]`), /info badge + Verfügbarkeit section.
+## Services (seed `wels_multiservice_v3_de`)
+- Reinigung (hourly): Unterhaltsreinigung €25/h (min 2), Grundreinigung €30/h (min 3), Fensterreinigung €28/h (min 2)
+- Quote only (no online payment, status `quote_requested`): Gartenpflege, Winterdienst & Schneeräumung, Dach- & PV-Reinigung
+- Admin can edit category, pricing model, rate, min hours, and materials fee (default €10, `/api/admin/settings`).
 
-## Services (seeded in EUR, German)
-- Basis-Paket €66 (3 Std.)
-- Familien-Paket €112,50 (4–5 Std.)
-- Premium-Paket €120 (5 Std./Tag)
-- VIP-Monatspaket €2.000 (20 Std./Woche)
+## Booking (3 steps: Was → Wann → Wo)
+- Hours stepper + materials toggle (customer provides vs. we bring +fee), date (21 days) & time 14–19, contact/address prefilled from profile, discount codes (WILLKOMMEN10, MONAT5, FREUNDIN2H, KUEHL40), DSGVO consent.
+- Hourly → MOCK Stripe checkout → success. Quote → success "Anfrage gesendet".
 
-## Flows
-1. Customer: Home → Book (pack, day, time, name/phone/address) → Checkout (MOCK Stripe card form) → Success + Route (Apple/Google Maps deep-link) → My-Bookings.
-2. Admin: /admin/login → Terminkalender (stats Heute/Gesamt/Umsatz, day strip, list) → Booking modal (Route in Maps, Bestätigen → Starten → Abschließen, Stornieren) → Services CRUD (/admin/services).
-3. Landing/Info (/info): Über mich, Angebot (Reinigung + Kinderbetreuung), Verfügbarkeit, 4 Pakete, 4 Angebote mit Codes (**WILLKOMMEN10, KUEHL40, FREUNDIN2H, MONAT5**), Zahlungsmethoden, Servicegebiet (Wels + Gemeinden), Kundenbewertungen, Vertrauen & Sicherheit, Kontakt (WhatsApp +43 664 101 9869, denissenavaporras@gmail.com).
+## Profile
+- Device-based profile (`/api/profile`, X-Device-Id), materials default toggle, booking history, invoices tab, PDF invoice (`/api/bookings/{id}/invoice?device_id=`) for paid bookings with sequential number RE-YYYY-NNNN and company data (Almgasse 12/6, 4600 Wels, UID 54383/3172, Raiffeisenbank IBAN AT94 3445 0000 0213 9451, BIC RZOAT2L450).
 
-## Backend
-- FastAPI + MongoDB. All routes under `/api`. JWT (pyjwt) + bcrypt for admin.
-- Endpoints: services (public GET, admin CRUD), bookings (public create/get/list-by-device, MOCK pay), admin (login, bookings query, stats, status update).
+## Home
+- Time-based greeting with name, auto-sliding promo banner, big CTAs (Buchen, WhatsApp), 4 category tiles, next booking, local SEO text (Reinigungsservice Wels, Schneeräumung Amberg, Winterdienst Gramastetten).
+
+## Branding
+Logo colors: blue #1572C4 (deep #0D4F8C), green #8DC63F. Logo at `assets/images/logo.png`.
 
 ## Integrations
-- Stripe: **MOCKED** — accepts `4242…` (success) / `4000…0002` (declined). Real Stripe swap: replace `POST /api/bookings/{id}/pay` with PaymentIntent + Stripe Elements/PaymentSheet.
-- Maps: `Linking` deep-link (Apple Maps / geo: / Google Maps fallback).
-- Auth: JWT admin only. Customer uses AsyncStorage device_id.
+- Stripe: MOCK (awaiting user keys; EPS-Überweisung desired later)
+- Email notification: SendGrid code path (skips if not configured)
 
-## Design
-`/app/design_guidelines.json` — iOS-Native Clean, Sage/Moss green palette. Generous spacing, sticky bottom CTAs, Ionicons.
-
-## Localization
-Full German UI (screens, seeded data, dates `toLocaleDateString("de-DE", …)`).
-
-## Non-goals (MVP)
-- Push notifications
-- Real Stripe integration
-- Discount code redemption logic (codes are displayed as marketing badges only)
-- Google-Maps embedded map (uses deep-link)
+## Backlog
+- Real Stripe (cards + EPS)
+- VAT note on invoices if required

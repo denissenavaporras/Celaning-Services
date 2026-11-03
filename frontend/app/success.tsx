@@ -5,20 +5,23 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radius, spacing, typography } from "@/src/lib/theme";
-import { api, getDeviceId, Booking } from "@/src/lib/api";
+import { api, getDeviceId, Booking, PAID_STATUSES, isInvoiceable } from "@/src/lib/api";
+import { openInvoice, openWhatsApp } from "@/src/lib/helpers";
 
 export default function Success() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deviceId, setDeviceId] = useState("");
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       try {
-        const deviceId = await getDeviceId();
-        const b = await api.getBooking(id, deviceId);
+        const dev = await getDeviceId();
+        setDeviceId(dev);
+        const b = await api.getBooking(id, dev);
         setBooking(b);
       } finally {
         setLoading(false);
@@ -42,7 +45,9 @@ export default function Success() {
   if (loading) return <View style={styles.loader}><ActivityIndicator color={colors.brandPrimary} /></View>;
   if (!booking) return <View style={styles.loader}><Text>Termin nicht gefunden</Text></View>;
 
-  const isPaid = ["paid", "confirmed", "in_progress", "completed"].includes(booking.status);
+  const isPaid = PAID_STATUSES.includes(booking.status);
+  const isQuote = booking.status === "quote_requested";
+  const isQuoteService = booking.pricing === "quote";
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
@@ -50,16 +55,20 @@ export default function Success() {
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
           <View style={styles.iconWrap}>
-            <View style={[styles.iconCircle, { backgroundColor: isPaid ? colors.success : colors.warning }]}>
-              <Ionicons name={isPaid ? "checkmark" : "time"} size={44} color="#fff" />
+            <View style={[styles.iconCircle, { backgroundColor: isPaid || isQuote ? colors.success : colors.warning }]}>
+              <Ionicons name={isPaid ? "checkmark" : isQuote ? "paper-plane" : "time"} size={44} color="#fff" />
             </View>
           </View>
           <Text testID="success-title" style={styles.title}>
-            {isPaid ? "Termin bestätigt!" : "Zahlung ausstehend"}
+            {isPaid ? "Termin bestätigt!" : isQuote ? "Anfrage gesendet!" : booking.status === "cancelled" ? "Termin storniert" : "Zahlung ausstehend"}
           </Text>
           <Text style={styles.subtitle}>
             {isPaid
-              ? "Sie erhalten eine Benachrichtigung, sobald das Team unterwegs ist."
+              ? isInvoiceable(booking)
+                ? "Ihre Rechnung können Sie jederzeit als PDF herunterladen."
+                : "Wir freuen uns auf Ihren Termin."
+              : isQuote
+              ? "Wir melden uns in Kürze mit Ihrem unverbindlichen Angebot."
               : "Schließen Sie die Zahlung ab, um Ihren Termin zu sichern."}
           </Text>
 
@@ -71,8 +80,13 @@ export default function Success() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowSmall}>Service</Text>
                 <Text style={styles.rowBig}>{booking.service_name}</Text>
+                {booking.hours ? (
+                  <Text style={styles.rowSmall}>
+                    {booking.hours} Std. · {booking.materials_by_us ? `Material von uns (+€${(booking.materials_fee || 0).toFixed(2)})` : "Material vom Kunden"}
+                  </Text>
+                ) : null}
               </View>
-              <Text style={styles.priceTxt}>€{(booking.final_price ?? booking.service_price).toFixed(0)}</Text>
+              <Text style={styles.priceTxt}>{isQuoteService ? "Angebot" : `€${(booking.final_price ?? booking.service_price).toFixed(2)}`}</Text>
             </View>
             <View style={styles.dividerRow} />
             <View style={styles.rowH}>
@@ -128,7 +142,19 @@ export default function Success() {
             <Text style={styles.mapsText}>Route in Maps anzeigen</Text>
           </Pressable>
 
-          {!isPaid && (
+          {isInvoiceable(booking) && (
+            <Pressable testID="download-invoice-btn" onPress={() => openInvoice(booking.id, deviceId)} style={styles.altBtn}>
+              <Text style={styles.altBtnText}>Rechnung (PDF) herunterladen</Text>
+            </Pressable>
+          )}
+
+          {isQuote && (
+            <Pressable testID="quote-whatsapp-btn" onPress={() => openWhatsApp(`Hallo! Ich habe eine Anfrage für ${booking.service_name} gesendet.`)} style={styles.altBtn}>
+              <Text style={styles.altBtnText}>Per WhatsApp nachfragen</Text>
+            </Pressable>
+          )}
+
+          {booking.status === "pending_payment" && (
             <Pressable
               testID="go-checkout-btn"
               onPress={() => router.replace({ pathname: "/checkout", params: { id: booking.id } })}
@@ -138,7 +164,7 @@ export default function Success() {
             </Pressable>
           )}
 
-          <Pressable testID="back-home-btn" onPress={() => router.replace("/")} style={styles.altBtnGhost}>
+          <Pressable testID="back-home-btn" onPress={() => router.replace("/home")} style={styles.altBtnGhost}>
             <Text style={styles.altBtnGhostText}>Zurück zur Startseite</Text>
           </Pressable>
         </ScrollView>

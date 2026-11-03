@@ -63,19 +63,7 @@ export default function Checkout() {
       }, deviceId);
       router.replace({ pathname: "/success", params: { id: booking.id } });
     } catch (e: any) {
-      const msg = (e.message || "").toString();
-      const translated = msg.includes("rechazada") || msg.includes("declined")
-        ? "Karte abgelehnt. Bitte andere Karte versuchen."
-        : msg.includes("tarjeta") || msg.includes("card")
-        ? "Ungültige Kartennummer."
-        : msg.includes("CVC")
-        ? "Ungültiger CVC."
-        : msg.includes("titular") || msg.includes("holder")
-        ? "Karteninhaber erforderlich."
-        : msg.includes("pagada") || msg.includes("paid")
-        ? "Termin ist bereits bezahlt."
-        : "Zahlungsfehler.";
-      setError(translated);
+      setError((e.message || "").toString() || "Zahlungsfehler.");
     } finally {
       setPaying(false);
     }
@@ -111,6 +99,18 @@ export default function Checkout() {
               <Text style={styles.rowLabel}>Service</Text>
               <Text style={styles.rowValue}>{booking.service_name}</Text>
             </View>
+            {booking.hours ? (
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Dauer</Text>
+                <Text style={styles.rowValue}>{booking.hours} Std. × €{(booking.hourly_rate || 0).toFixed(2)}</Text>
+              </View>
+            ) : null}
+            {booking.materials_by_us ? (
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Material</Text>
+                <Text style={styles.rowValue}>+€{(booking.materials_fee || 0).toFixed(2)}</Text>
+              </View>
+            ) : null}
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Datum</Text>
               <Text style={styles.rowValue}>
@@ -209,11 +209,10 @@ export default function Checkout() {
               Ihre Karte wird nur belastet, wenn Sie bestätigen. Nutzen Sie 4242 4242 4242 4242 für eine erfolgreiche Testzahlung.
             </Text>
           </View>
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
         <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+          {error ? <Text testID="checkout-error" style={[styles.errorText, { marginTop: 0, marginBottom: spacing.sm }]}>{error}</Text> : null}
           <Pressable
             testID="pay-now-btn"
             disabled={paying || !holder.trim()}
@@ -225,7 +224,7 @@ export default function Checkout() {
             ) : (
               <>
                 <Ionicons name="lock-closed" size={18} color={colors.onBrandPrimary} />
-                <Text style={styles.payBtnText}>€{(booking.final_price ?? booking.service_price).toFixed(0)} bezahlen & bestätigen</Text>
+                <Text style={styles.payBtnText}>€{(booking.final_price ?? booking.service_price).toFixed(2)} bezahlen & bestätigen</Text>
               </>
             )}
           </Pressable>

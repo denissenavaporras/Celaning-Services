@@ -12,6 +12,18 @@ export type Service = {
   duration_minutes: number;
   image_url?: string;
   active: boolean;
+  category: string;
+  pricing: "hourly" | "quote";
+  min_hours: number;
+  icon: string;
+};
+
+export type Profile = {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  materials_by_us: boolean;
 };
 
 export type Booking = {
@@ -36,7 +48,24 @@ export type Booking = {
   discount_code?: string | null;
   discount_amount?: number;
   final_price?: number;
+  service_category?: string;
+  pricing?: "hourly" | "quote";
+  hours?: number | null;
+  hourly_rate?: number | null;
+  materials_by_us?: boolean;
+  materials_fee?: number;
+  invoice_number?: string | null;
 };
+
+export const PAID_STATUSES = ["paid", "confirmed", "in_progress", "completed"];
+
+export function isInvoiceable(b: Booking) {
+  return PAID_STATUSES.includes(b.status) && b.pricing !== "quote" && !!b.payment_ref && (b.final_price ?? 0) > 0;
+}
+
+export function invoiceUrl(bookingId: string, deviceId: string) {
+  return `${API}/bookings/${bookingId}/invoice?device_id=${encodeURIComponent(deviceId)}`;
+}
 
 async function jsonReq<T>(path: string, opts: RequestInit = {}, auth = false, deviceId?: string): Promise<T> {
   const headers: Record<string, string> = {
@@ -74,14 +103,21 @@ export const api = {
   getBooking: (id: string, deviceId: string) =>
     jsonReq<Booking>(`/bookings/${id}`, {}, false, deviceId),
   customerBookings: (deviceId: string) =>
-    jsonReq<Booking[]>(`/bookings/customer/${encodeURIComponent(deviceId)}`),
+    jsonReq<Booking[]>(`/bookings/customer/${encodeURIComponent(deviceId)}`, {}, false, deviceId),
   validateDiscount: (code: string, price: number) =>
     jsonReq<{ code: string; type: string; value: number; description: string; discount_amount: number; final_price: number }>(
       "/discount/validate",
       { method: "POST", body: JSON.stringify({ code, price }) },
     ),
 
+  settings: () => jsonReq<{ materials_fee: number }>("/settings"),
+  getProfile: (deviceId: string) => jsonReq<Profile>("/profile", {}, false, deviceId),
+  saveProfile: (p: Profile, deviceId: string) =>
+    jsonReq<Profile>("/profile", { method: "PUT", body: JSON.stringify(p) }, false, deviceId),
+
   // admin
+  updateSettings: (materials_fee: number) =>
+    jsonReq<{ materials_fee: number }>("/admin/settings", { method: "PUT", body: JSON.stringify({ materials_fee }) }, true),
   adminLogin: (email: string, password: string) =>
     jsonReq<{ access_token: string; email: string }>("/admin/login", {
       method: "POST",
