@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { colors } from "@/src/lib/theme";
+import { AuthProvider } from "@/src/ctx/AuthContext";
 
 LogBox.ignoreAllLogs(true);
 
@@ -25,11 +26,17 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface } }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
-      </Stack>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="auth/login" options={{ presentation: "modal" }} />
+          <Stack.Screen name="auth/register" options={{ presentation: "modal" }} />
+          <Stack.Screen name="auth/forgot" options={{ presentation: "modal" }} />
+          <Stack.Screen name="feedback" />
+        </Stack>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

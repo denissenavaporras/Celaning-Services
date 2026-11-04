@@ -7,6 +7,7 @@ import logging
 import uuid
 import asyncio
 import html
+import secrets
 import time
 from urllib.parse import quote as urlquote
 from pathlib import Path
@@ -17,6 +18,15 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, Field
 import jwt
 from passlib.context import CryptContext
+
+from emails import (
+    send_admin_new_booking,
+    send_customer_booking_confirmation,
+    send_customer_quote_received,
+)
+import emails as emails_mod
+from customers import make_router, apply_loyalty_and_referral, resolve_discount, mark_coupon_used
+from scheduler import start_scheduler
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -148,7 +158,13 @@ class Booking(BaseModel):
     hourly_rate: Optional[float] = None
     materials_by_us: bool = False
     materials_fee: float = 0.0
-    invoice_number: Optional[str] = None
+    customer_id: Optional[str] = None
+    feedback_token: Optional[str] = None
+    feedback_done: bool = False
+    reminder_sent: bool = False
+    feedback_request_sent: bool = False
+    quote_note: Optional[str] = None
+    duration_minutes: Optional[int] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -352,6 +368,19 @@ async def seed_data():
 @app.on_event("startup")
 async def _startup():
     asyncio.create_task(seed_data())
+    try:
+        await db.customers.create_index("email", unique=True)
+        await db.customers.create_index("referral_code", unique=True, sparse=True)
+        await db.coupons.create_index("code", unique=True)
+        await db.coupons.create_index([("customer_id", 1), ("used", 1)])
+        await db.bookings.create_index([("customer_id", 1), ("created_at", -1)])
+        await db.bookings.create_index("feedback_token", sparse=True)
+    except Exception:  # noqa: BLE001
+        logger.exception("index creation")
+    try:
+        start_scheduler(db, emails_mod)
+    except Exception:  # noqa: BLE001
+        logger.exception("scheduler start failed")
 
 
 @app.on_event("shutdown")
@@ -397,11 +426,32 @@ async def list_services(only_active: bool = True):
 
 
 @api.post("/discount/validate")
-async def validate_discount(payload: dict):
+async def validate_discount(payload: dict, authorization: Optional[str] = Header(default=None)):
     code = (payload or {}).get("code") or ""
     price = float((payload or {}).get("price") or 0)
     if not code.strip():
         raise HTTPException(status_code=400, detail="Kein Code angegeben")
+    # Try customer coupon first
+    customer_id = None
+    if authorization and authorization.lower().startswith("bearer "):
+        try:
+            p = jwt.decode(authorization.split(" ", 1)[1], JWT_SECRET, algorithms=[JWT_ALG])
+            if p.get("type") == "customer":
+                customer_id = p.get("sub")
+        except Exception:
+            pass
+    coupon = await resolve_discount(db, code, price, customer_id)
+    if coupon:
+        amount = round(price * coupon["value"] / 100.0, 2) if coupon["type"] == "percent" else float(coupon["value"])
+        amount = min(amount, price)
+        return {
+            "code": coupon["coupon_code"] if coupon.get("kind") == "coupon" else code.strip().upper(),
+            "type": coupon["type"],
+            "value": coupon["value"],
+            "description": coupon["description"],
+            "discount_amount": amount,
+            "final_price": round(price - amount, 2),
+        }
     normalized, amount, final = apply_discount(code, price)
     rule = DISCOUNT_CODES[normalized]
     return {
@@ -415,71 +465,15 @@ async def validate_discount(payload: dict):
 
 
 async def send_booking_notification(booking: dict):
-    """Fire-and-forget: notify Dennisse of new booking via SendGrid. Silently skips if not configured."""
-    api_key = os.environ.get("SENDGRID_API_KEY", "").strip()
-    sender = os.environ.get("SENDER_EMAIL", "").strip()
-    to_email = "denissenavaporras@gmail.com"
-    if not api_key or not sender:
-        logger.info("SendGrid not configured — skipping email notification")
-        return
+    """Kept for backwards compat — delegate to emails module."""
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
-
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={urlquote(booking['address'])}"
-        esc = html.escape
-        name = esc(str(booking.get('customer_name', '')))
-        phone_raw = str(booking.get('customer_phone', ''))
-        phone_display = esc(phone_raw)
-        phone_href_num = "".join(c for c in phone_raw if c.isdigit() or c == "+")
-        phone_href = urlquote(phone_href_num, safe="+")
-        service = esc(str(booking.get('service_name', '')))
-        address = esc(str(booking.get('address', '')))
-        notes = esc(str(booking.get('notes') or '—'))
-        status_txt = esc(str(booking.get('status', '')))
-        booking_id_s = esc(str(booking.get('id', '')))
-        date_s = esc(str(booking.get('scheduled_date', '')))
-        time_s = esc(str(booking.get('scheduled_time', '')))
-        discount_line = ""
-        if booking.get("discount_code"):
-            discount_line = (
-                f"<p><b>Rabatt:</b> {esc(str(booking['discount_code']))} "
-                f"(–€{booking.get('discount_amount', 0):.2f})</p>"
-            )
-
-        html_body = f"""
-        <div style="font-family: -apple-system, sans-serif; max-width: 560px;">
-          <h2 style="color:#5D7B1E;">Neue Buchung — Cleaning Service Wels</h2>
-          <p><b>Kunde:</b> {name}<br/>
-             <b>Telefon:</b> <a href="tel:{phone_href}">{phone_display}</a></p>
-          <p><b>Service:</b> {service}<br/>
-             <b>Datum:</b> {date_s} um {time_s} Uhr</p>
-          <p><b>Adresse:</b> {address}<br/>
-             <a href="{maps_url}">Route in Google Maps öffnen</a></p>
-          {discount_line}
-          <p><b>Endpreis:</b> €{booking.get('final_price', booking['service_price']):.2f}</p>
-          <p><b>Status:</b> {status_txt}</p>
-          <p><b>Notizen:</b> {notes}</p>
-          <hr/>
-          <p style="color:#636366; font-size:12px;">Buchungs-ID: {booking_id_s}</p>
-        </div>
-        """
-
-        message = Mail(
-            from_email=sender,
-            to_emails=to_email,
-            subject=f"Neue Buchung: {name} – {date_s} {time_s}",
-            html_content=html_body,
-        )
-        sg = SendGridAPIClient(api_key)
-        resp = sg.send(message)
-        logger.info("SendGrid notification sent, status=%s", resp.status_code)
-    except Exception as e:
+        send_admin_new_booking(booking)
+    except Exception as e:  # noqa: BLE001
         logger.exception("Email notification failed: %s", e)
 
 
 @api.post("/bookings", response_model=Booking)
-async def create_booking(payload: BookingCreate):
+async def create_booking(payload: BookingCreate, authorization: Optional[str] = Header(default=None)):
     svc = await db.services.find_one({"id": payload.service_id}, {"_id": 0})
     if not svc:
         raise HTTPException(status_code=404, detail="Service nicht gefunden")
@@ -487,12 +481,27 @@ async def create_booking(payload: BookingCreate):
         raise HTTPException(status_code=400, detail="Datenschutz-Einwilligung ist erforderlich")
     validate_booking_input(payload)
 
+    # Optional logged-in customer
+    customer_id = None
+    customer_email_final = payload.customer_email
+    if authorization and authorization.lower().startswith("bearer "):
+        try:
+            p = jwt.decode(authorization.split(" ", 1)[1], JWT_SECRET, algorithms=[JWT_ALG])
+            if p.get("type") == "customer":
+                cust = await db.customers.find_one({"id": p.get("sub")}, {"_id": 0})
+                if cust:
+                    customer_id = cust["id"]
+                    customer_email_final = payload.customer_email or cust.get("email")
+        except Exception:
+            pass
+
     pricing = svc.get("pricing", "hourly")
     materials_fee = 0.0
     hours = None
     rate = None
+    code_used = ""
     if pricing == "quote":
-        price, code, discount_amount, final_price = 0.0, "", 0.0, 0.0
+        price, discount_amount, final_price = 0.0, 0.0, 0.0
         status = "quote_requested"
     else:
         min_h = int(svc.get("min_hours") or 1)
@@ -503,8 +512,24 @@ async def create_booking(payload: BookingCreate):
         if payload.materials_by_us:
             materials_fee = await get_materials_fee()
         price = round(rate * hours + materials_fee, 2)
-        code, discount_amount, final_price = apply_discount(payload.discount_code, price)
+        # Dynamic (customer) coupon first, then static
+        if payload.discount_code:
+            dyn = await resolve_discount(db, payload.discount_code, price, customer_id)
+            if dyn:
+                amt = round(price * dyn["value"] / 100.0, 2) if dyn["type"] == "percent" else float(dyn["value"])
+                amt = min(amt, price)
+                code_used = dyn["coupon_code"]
+                discount_amount = amt
+                final_price = round(price - amt, 2)
+            else:
+                code_used, discount_amount, final_price = apply_discount(payload.discount_code, price)
+        else:
+            code_used, discount_amount, final_price = "", 0.0, price
         status = "pending_payment"
+
+    duration = int(svc.get("duration_minutes") or 120)
+    if hours:
+        duration = hours * 60
 
     booking = Booking(
         status=status,
@@ -514,10 +539,12 @@ async def create_booking(payload: BookingCreate):
         hourly_rate=rate,
         materials_by_us=payload.materials_by_us,
         materials_fee=materials_fee,
+        duration_minutes=duration,
         device_id=payload.device_id,
+        customer_id=customer_id,
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
-        customer_email=payload.customer_email,
+        customer_email=customer_email_final,
         service_id=payload.service_id,
         service_name=svc["name"],
         service_price=price,
@@ -530,14 +557,15 @@ async def create_booking(payload: BookingCreate):
         notes=payload.notes,
         consent_accepted=True,
         consent_at=datetime.now(timezone.utc),
-        discount_code=code or None,
+        discount_code=code_used or None,
         discount_amount=discount_amount,
         final_price=final_price,
     )
     await db.bookings.insert_one(booking.dict())
 
-    # Fire-and-forget: notify Dennisse
-    asyncio.create_task(send_booking_notification(booking.dict()))
+    asyncio.create_task(asyncio.to_thread(send_admin_new_booking, booking.dict()))
+    if pricing == "quote":
+        asyncio.create_task(asyncio.to_thread(send_customer_quote_received, booking.dict()))
 
     return booking
 
@@ -567,6 +595,7 @@ async def pay_booking(booking_id: str, payload: PayRequest, x_device_id: Optiona
 
     now = datetime.now(timezone.utc)
     ref = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
+    feedback_token = secrets.token_urlsafe(24)
     await db.bookings.update_one(
         {"id": booking_id},
         {"$set": {
@@ -574,9 +603,23 @@ async def pay_booking(booking_id: str, payload: PayRequest, x_device_id: Optiona
             "payment_method": "mock_card",
             "payment_ref": ref,
             "paid_at": now,
+            "feedback_token": feedback_token,
         }},
     )
     updated = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    # Mark coupon used if applicable
+    if updated.get("discount_code"):
+        try:
+            await mark_coupon_used(db, updated["discount_code"])
+        except Exception:  # noqa: BLE001
+            pass
+    # Loyalty / referral rewards
+    try:
+        await apply_loyalty_and_referral(db, emails_mod, updated)
+    except Exception:  # noqa: BLE001
+        logger.exception("loyalty/referral failed")
+    # Customer confirmation email
+    asyncio.create_task(asyncio.to_thread(send_customer_booking_confirmation, updated))
     return clean_doc(updated)
 
 
@@ -906,6 +949,10 @@ async def delete_service(service_id: str, _: str = Depends(verify_admin)):
 
 
 app.include_router(api)
+
+# Customer auth & rewards router
+_customers_router, _current_customer, _optional_customer = make_router(db, JWT_SECRET, JWT_ALG, verify_admin, emails_mod)
+app.include_router(_customers_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
