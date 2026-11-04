@@ -76,3 +76,16 @@ User: "por favor cambia la imagen institucional del sitio web por algo que sea m
 - Flyer slogan: "Ihr sauberes Zuhause, das ganze Jahr".
 - Flyer service area: "Wels & 50 km Umgebung · bald Wien" (differs from current site's "Amberg, Gramastetten & Umgebung" — use the flyer's area).
 - Imagery should match: blue/green branded van, navy polos with logo, etc.
+
+---
+# Round 3: Launch prices
+User: "de momento quita los precios del sitio web o ponles por introduccion y solo por 30 dias este precio si reservan en este mes, con un boton a la accion de reservar ya"
+Decisions:
+- Show existing prices as introductory/launch prices, valid only from 15 November to 15 December (2026).
+- Each price gets a "Jetzt buchen" button that opens the contact form with the offer already pre-selected.
+- Chatbot: keep quoting prices as the launch offer (valid 15.11.–15.12.), and invite users to request a personal Angebot for our services.
+
+---
+# Round 4 (pending user choice): Visitor statistics
+User: "como puedo ver las estadisticas de los usuarios cuando publique el sitio web ?"
+Options offered: own stats in /admin (recommended), Google Analytics, Plausible. Awaiting choice.

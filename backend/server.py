@@ -63,6 +63,7 @@ class ContactIn(BaseModel):
     email: EmailStr
     service: ServiceType
     message: str = Field(default="", max_length=4000)
+    offer: str = Field(default="", max_length=200)
 
 
 class Contact(BaseDocument):
@@ -71,6 +72,7 @@ class Contact(BaseDocument):
     email: str
     service: str
     message: str = ""
+    offer: str = ""
     status: str = "neu"
     email_sent: bool = False
     created_at: str
@@ -155,7 +157,7 @@ async def me(admin: dict = Depends(get_current_admin)):
 # ---------- Contact ----------
 def contact_email_html(c: Contact) -> str:
     rows = [("Name", c.name), ("Telefon", c.phone), ("E-Mail", c.email), ("Leistung", c.service),
-            ("Nachricht", c.message or "-")]
+            ("Gewähltes Angebot", c.offer or "-"), ("Nachricht", c.message or "-")]
     cells = "".join(
         f'<tr><td style="padding:8px 12px;font-weight:bold;color:#0F5132;vertical-align:top">{escape(k)}</td>'
         f'<td style="padding:8px 12px;color:#0F172A;white-space:pre-wrap">{escape(v)}</td></tr>' for k, v in rows)

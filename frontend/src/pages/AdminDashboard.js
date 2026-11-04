@@ -21,6 +21,7 @@ const Row = ({ c, onStatus, onDelete }) => (
     </div>
     <div className="md:col-span-5 space-y-2">
       <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-[#EEF7E4] text-[#1170C4]" data-testid={`admin-contact-service-${c.id}`}>{c.service}</span>
+      {c.offer && <p className="text-xs font-semibold text-[#3F7A1C] bg-[#7DC242]/15 rounded-lg px-2.5 py-1.5" data-testid={`admin-contact-offer-${c.id}`}>Angebot: {c.offer}</p>}
       <p className="text-sm text-slate-600 whitespace-pre-wrap">{c.message || "–"}</p>
       <p className="flex items-center gap-1.5 text-xs text-slate-400">{c.email_sent ? <MailCheck className="h-3.5 w-3.5 text-emerald-600" /> : <MailX className="h-3.5 w-3.5 text-red-500" />}{c.email_sent ? "E-Mail versendet" : "E-Mail nicht versendet"}</p>
     </div>

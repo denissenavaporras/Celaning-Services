@@ -50,6 +50,11 @@ export const BRAND_BAR = [
 
 export const SERVICE_AREA = "Wels & 50 km Umgebung · bald Wien";
 
+export const LAUNCH = { label: "Einführungspreis", period: "gültig vom 15.11. bis 15.12.2026" };
+
+export const bookUrl = (service, offer) =>
+  `/kontakt?leistung=${encodeURIComponent(service)}&angebot=${encodeURIComponent(offer)}#angebot`;
+
 export const SERVICE_OPTIONS = [
   { value: "Wohnung", label: "Wohnung" },
   { value: "Dach", label: "Dach" },

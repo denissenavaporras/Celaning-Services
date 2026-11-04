@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration 3 tested the Round 3 launch prices. Backend: 23/23 tests pass (19 regression tests plus 4 new ones in test_launch_offer.py). The new tests cover: an offer longer than 200 characters is rejected with 422; a contact with an offer is persisted and returned by GET /api/admin/contacts; chat price answers mention the Einführungspreis, the dates 15.11.–15.12. and an invitation to request an Angebot or click Jetzt buchen. Frontend: launch-banner shows 'gültig vom 15.11. bis 15.12.2026' with launch-banner-book, and there are 4 Einführungspreis tags. All 7 price Jetzt buchen links plus the banner link have correct /kontakt?leistung=..&angebot=..#angebot URLs and scroll to the form. contact-selected-offer-text shows the offer, contact-remove-offer clears it, submitting with an offer reaches the success screen, and admin-contact-offer-{id} shows 'Angebot: ...'. Admin delete works. The chatbot UI answer says 'Einführungspreis ... 15.11. bis 15.12.2026' and invites the user to Jetzt buchen or request an Angebot. Home, header, footer and admin login work. Mobile 390px has no horizontal overflow. BUG FOUND AND FIXED: the SelectValue fix alone did NOT work. With a service from the URL, the select still showed 'Bitte auswählen' and submitting gave the toast 'Bitte wählen Sie eine Leistung aus.' because form.service was really ''. After my 1-line fix in ContactForm.js, the select shows Wohnung or Winterdienst and manual selection still works.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ContactForm service Select (FIXED by testing agent)", "issue": "When the service came from the URL params, Radix Select called onValueChange('') right after the controlled value changed. This is its hidden native select's change event; that select picks its first option when the value has no match. The stale-closure handler then reset form.service to ''. The result: the placeholder showed and submitting was blocked. The fix is onValueChange={(v) => v && setForm((f) => ({ ...f, service: v }))}.", "selector": "[data-testid='contact-select-service']", "priority": "HIGH (resolved)"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/leistungen Zusatzleistungen table (desktop 1920 and mobile 390)", "issues": ["The 'Wäsche waschen/bügeln' row's price-waesche-book button overflows the card's inner padding. On mobile its right edge is at 359px while the row ends at 344px, so it nearly touches the card border; on desktop it reaches the card edge. The cause: the price '20–25 €/Std.' and the shrink-0 button leave no room, and the label can't shrink further. Fix ideas: add min-w-0 to the label, whitespace-nowrap on the price and flex-wrap on the row, or put the button on its own line on small widths."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_launch_offer.py", "/app/backend/tests/test_cleaning_services_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Review and keep the testing agent's fix in ContactForm.js (onValueChange ignores the empty value and uses a functional setState). Consider also using functional updates in set(k) to avoid stale closures.",
+    "Fix the overflow of the Wäsche row's Jetzt buchen button in price-table-zusatz (mobile and desktop)."
+  ],
+  "critical_code_review_comments": [
+    "ContactForm: setForm({...form}) patterns use stale closures. Prefer functional updates (setForm(f => ...)) everywhere.",
+    "The launch dates are hardcoded in several places (Leistungen Winterdienst card '15.11.–15.12.2026', the ContactForm hint text, chat_knowledge). Use LAUNCH.period / a single constant.",
+    "Placeholders from earlier iterations remain (generic social links, Impressum)."
+  ],
+  "updated_files": ["/app/frontend/src/components/site/ContactForm.js (Select onValueChange guard)", "/app/backend/tests/test_launch_offer.py (new)"],
+  "success_rate": {"backend": "100% (23/23)", "frontend": "100% after the fix (the pre-selection was broken before it); 1 minor design issue"},
+  "test_credentials": "admin@cleaning-services.at / Admin2026! works",
+  "seed_data_creation": "3 contact submissions with sender delivered@resend.dev (2 from pytest, 1 from UI 'TEST_Launch Tester' with an offer). All were deleted by id, so the contacts collection is empty again.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> pytest tests/ (xdist). Contact tests send real emails, so keep them few. Launch testids: launch-banner, launch-banner-book, price-{70-90,91-120,121,waesche,kueche,muell,winterdienst}-book, contact-selected-offer(-text), contact-remove-offer, admin-contact-offer-{id}. Note that the hidden native select reports the first option even when the state is empty; verify the pre-selection with the visible trigger text or a submit attempt."
+}

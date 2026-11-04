@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
-import { Loader2, Send, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, CheckCircle2, Tag, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -9,14 +10,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { API, formatApiError } from "@/lib/api";
 import { SERVICE_OPTIONS } from "@/lib/content";
 
-const EMPTY = { name: "", phone: "", email: "", service: "", message: "" };
+const EMPTY = { name: "", phone: "", email: "", service: "", message: "", offer: "" };
 const field = "h-12 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-[#5FA52E]/40";
+const VALID = SERVICE_OPTIONS.map((o) => o.value);
 
 export const ContactForm = () => {
+  const [params] = useSearchParams();
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  useEffect(() => {
+    const leistung = params.get("leistung");
+    const angebot = params.get("angebot");
+    if (!leistung && !angebot) return;
+    setDone(false);
+    setForm((f) => ({ ...f, service: VALID.includes(leistung) ? leistung : f.service, offer: (angebot || "").slice(0, 200) }));
+  }, [params]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -45,6 +56,17 @@ export const ContactForm = () => {
 
   return (
     <form onSubmit={submit} className="space-y-5" data-testid="contact-form">
+      {form.offer && (
+        <div className="flex items-start gap-3 rounded-xl border-2 border-[#7DC242] bg-[#EEF7E4] px-4 py-3" data-testid="contact-selected-offer">
+          <Tag className="h-4 w-4 mt-0.5 text-[#3F7A1C] shrink-0" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-[#1E2F6B]">Gewähltes Angebot</p>
+            <p className="text-slate-700" data-testid="contact-selected-offer-text">{form.offer}</p>
+            <p className="text-xs text-slate-500 mt-0.5">Einführungspreis gültig vom 15.11. bis 15.12.2026</p>
+          </div>
+          <button type="button" onClick={() => setForm({ ...form, offer: "" })} aria-label="Angebot entfernen" data-testid="contact-remove-offer" className="p-1 rounded-full hover:bg-white text-slate-500"><X className="h-4 w-4" /></button>
+        </div>
+      )}
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="name">Name *</Label>
@@ -61,8 +83,8 @@ export const ContactForm = () => {
       </div>
       <div className="space-y-2">
         <Label>Welche Leistung benötigen Sie? *</Label>
-        <Select value={form.service} onValueChange={(v) => setForm({ ...form, service: v })}>
-          <SelectTrigger className={field} data-testid="contact-select-service"><SelectValue placeholder="Bitte auswählen" /></SelectTrigger>
+        <Select value={form.service} onValueChange={(v) => v && setForm((f) => ({ ...f, service: v }))}>
+          <SelectTrigger className={field} data-testid="contact-select-service"><SelectValue placeholder="Bitte auswählen">{SERVICE_OPTIONS.find((o) => o.value === form.service)?.label}</SelectValue></SelectTrigger>
           <SelectContent>
             {SERVICE_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value} data-testid={`contact-service-option-${o.value.toLowerCase()}`}>{o.label}</SelectItem>

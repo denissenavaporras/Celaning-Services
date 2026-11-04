@@ -26,6 +26,11 @@ Read /app/memory/product/requirements.md and build it. (German-language website 
 - Service area "Wels & 50 km Umgebung · bald Wien" across site + chatbot (Sie-form, no emojis)
 - New branded imagery (van, navy polos)
 
+## Round 3 – Launch prices (2026-09)
+- All prices labelled "Einführungspreis", banner "gültig vom 15.11. bis 15.12.2026" on Leistungen
+- "Jetzt buchen" per price → /kontakt?leistung=..&angebot=..#angebot, form pre-selects service + shows offer; offer stored (Contact.offer), shown in admin + owner email
+- Chatbot quotes launch prices with validity and invites to request a personal Angebot
+
 ## Backlog
 - P1: Real Instagram/Facebook URLs, real Impressum/Datenschutz data
 - P2: Admin password change, cookie consent banner, SEO meta tags, multi-language (ES/EN)
